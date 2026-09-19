@@ -1,4 +1,4 @@
-﻿package com.pmr.admin;
+package com.pmr.admin;
 
 import android.view.LayoutInflater;
 import android.view.View;
