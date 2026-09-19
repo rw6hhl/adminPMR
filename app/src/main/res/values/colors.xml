@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="c_blue">#1A3D7C</color>
+    <color name="c_blue_dark">#0F2750</color>
+    <color name="c_green">#1E7A1E</color>
+    <color name="c_green_dark">#145214</color>
+    <color name="c_red">#C00000</color>
+    <color name="c_red_dark">#800000</color>
+    <color name="c_orange">#C47A00</color>
+    <color name="c_orange_dark">#8A5500</color>
+    <color name="c_bg">#F5F7FA</color>
+    <color name="c_text">#222222</color>
+    <color name="c_log_bg">#0F1720</color>
+    <color name="c_log_text">#D0F0D0</color>
+    <color name="c_white">#FFFFFF</color>
+    <color name="c_gray">#888888</color>
+</resources>
