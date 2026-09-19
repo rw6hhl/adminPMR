@@ -11,13 +11,12 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-/* 6 вкладок — по одной на каждую секцию интерфейса.
- * Каждая вкладка надувает свой layout и привязывает View к MainActivity.
+/* 6 вкладок — по одной на каждую секцию.
+ * При создании вкладки вызывает методы bindTab* у MainActivity.
  */
 public class PagerAdapter extends RecyclerView.Adapter<PagerAdapter.VH> {
 
     private static final int COUNT = 6;
-
     private final MainActivity act;
 
     public PagerAdapter(MainActivity a) {
@@ -62,25 +61,17 @@ public class PagerAdapter extends RecyclerView.Adapter<PagerAdapter.VH> {
                 break;
             }
             case 2: {
-                TextView tv = h.itemView.findViewById(R.id.alogText);
+                TextView alog = h.itemView.findViewById(R.id.alogText);
+                TextView num  = h.itemView.findViewById(R.id.alogActiveNum);
+                TextView nm   = h.itemView.findViewById(R.id.alogActiveName);
                 Button btnClear = h.itemView.findViewById(R.id.btnAlogClear);
-                Button btnSave  = h.itemView.findViewById(R.id.btnAlogSave);
                 if (btnClear != null) {
                     btnClear.setOnClickListener(v -> {
                         if (PmrService.activeLog != null)
                             PmrService.activeLog.clear();
                     });
                 }
-                if (btnSave != null) {
-                    btnSave.setOnClickListener(v -> {
-                        /* Просто очищаем — сохранить пока нельзя без разрешений файловой системы.
-                         * В этой версии кнопка Save дублирует Clear.
-                         * TODO: реализовать сохранение в Downloads/через SAF. */
-                        if (PmrService.activeLog != null)
-                            PmrService.activeLog.add("-- сохранение не реализовано --");
-                    });
-                }
-                act.bindTabAlog(tv);
+                act.bindTabAlog(alog, num, nm);
                 break;
             }
             case 3: {
@@ -118,24 +109,17 @@ public class PagerAdapter extends RecyclerView.Adapter<PagerAdapter.VH> {
                 break;
             }
             default:
-                /* Подсказка — без действий */
                 break;
         }
     }
 
     @Override
-    public int getItemCount() {
-        return COUNT;
-    }
+    public int getItemCount() { return COUNT; }
 
     @Override
-    public int getItemViewType(int position) {
-        return position;
-    }
+    public int getItemViewType(int position) { return position; }
 
     static class VH extends RecyclerView.ViewHolder {
-        VH(@NonNull View v) {
-            super(v);
-        }
+        VH(@NonNull View v) { super(v); }
     }
 }

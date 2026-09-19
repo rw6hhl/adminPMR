@@ -1,50 +1,27 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">adminPMR</string>
+    <string name="app_name">Admin PMR</string>
+    <string name="app_version">V1.0</string>
 
-    <!-- Вкладки -->
-    <string name="tab_chan">Список в канале</string>
-    <string name="tab_list">Локальный list.txt</string>
-    <string name="tab_alog">Активность Абонентов</string>
-    <string name="tab_term">Терминал</string>
-    <string name="tab_ctrl">Управление</string>
-    <string name="tab_hint">Подсказка</string>
+    <string name="tab_chan">СПИСОК В КАНАЛЕ</string>
+    <string name="tab_list">ЛОКАЛЬНЫЙ LIST</string>
+    <string name="tab_alog">АКТИВНОСТЬ</string>
+    <string name="tab_term">ТЕРМИНАЛ</string>
+    <string name="tab_ctrl">УПРАВЛЕНИЕ</string>
+    <string name="tab_hint">Список команд</string>
 
-    <!-- Кнопки -->
     <string name="btn_refresh">Обновить (l)</string>
     <string name="btn_clear">Очистить</string>
-    <string name="btn_save">Сохранить</string>
     <string name="btn_send">Отправить</string>
-    <string name="btn_start">Запустить службу</string>
-    <string name="btn_stop">Остановить службу</string>
-    <string name="btn_260">260 = 0 (выключить)</string>
-    <string name="btn_261">261 = 1 (включить)</string>
-    <string name="btn_ban">Бан</string>
+    <string name="btn_ban">БАН</string>
 
-    <!-- Заголовки блоков -->
-    <string name="title_chan">Список в канале</string>
-    <string name="title_list">Локальный list.txt</string>
-    <string name="title_alog">Активность Абонентов</string>
-    <string name="title_term">Терминал — ручной ввод команд</string>
-    <string name="title_ctrl">Управление сервисом</string>
-    <string name="title_rw">Доступ к Ростовскому репитеру</string>
-    <string name="title_hint">Подсказка — список команд</string>
+    <string name="btn_260">260 ВЫКЛЮЧИТЬ</string>
+    <string name="btn_261">261 ВКЛЮЧИТЬ</string>
 
-    <!-- Уведомление -->
     <string name="notif_channel">PMR Admin</string>
     <string name="notif_title">PMR Admin работает</string>
     <string name="notif_text">Соединение с сервером PMR активно</string>
 
-    <!-- Подсказка -->
-    <string name="hint_text">list — запросить список с сервера и обновить локальный list.txt
-l — обновить живой список из канала
-rename &lt;ID&gt; &lt;текст&gt; — добавить или изменить запись. Пример: rename 26000 145.300 Мин-Воды
-delete &lt;ID&gt; — удалить запись. Пример: delete 26000
-b&lt;ID&gt; — переключить бан абонента по номеру client. Пример: b11777
-260 — Доступ к Ростовскому репитеру = 0 (выключить)
-261 — Доступ к Ростовскому репитеру = 1 (включить)
-exit — завершить работу программы
-
-Формат новых записей: пять цифр ID, пробел, расшифровка.
-Пример: 26345 Дача</string>
+    <string name="password_hint">Пароль</string>
+    <string name="password_btn">ВОЙТИ</string>
 </resources>

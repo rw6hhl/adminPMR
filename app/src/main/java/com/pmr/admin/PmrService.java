@@ -14,15 +14,12 @@ import androidx.core.app.NotificationCompat;
 import java.io.File;
 import java.io.InputStream;
 
-/* Foreground Service — держит PmrSocket в фоне.
- * Без этой службы Android убьёт процесс через несколько минут.
- */
+/* Foreground Service — держит PmrSocket в фоне. */
 public class PmrService extends Service {
 
     public static final String CHANNEL_ID = "pmr_admin_ch";
     public static final int NOTIF_ID = 1;
 
-    /* Общие объекты — доступны из MainActivity через PmrService.<объект> */
     public static ListFile listFile;
     public static ChanList chanList;
     public static ActiveLog activeLog;
@@ -43,7 +40,6 @@ public class PmrService extends Service {
         webLog    = new WebLog();
         cmdQueue  = new CmdQueue();
 
-        /* Если list.txt ещё нет — распаковываем из res/raw/list.txt */
         if (!listTxt.exists()) {
             try {
                 InputStream is = getResources().openRawResource(R.raw.list);
@@ -55,7 +51,7 @@ public class PmrService extends Service {
             listFile.load(listTxt);
         }
 
-        webLog.add("adminPMR v0.1-apk — служба запущена");
+        webLog.add("Admin PMR V1.0 — служба запущена");
 
         pmrSocket = new PmrSocket(listFile, chanList, activeLog, webLog,
                 cmdQueue, dir);
@@ -77,9 +73,7 @@ public class PmrService extends Service {
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+    public IBinder onBind(Intent intent) { return null; }
 
     private void createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -95,8 +89,7 @@ public class PmrService extends Service {
     private Notification buildNotification() {
         Intent i = new Intent(this, MainActivity.class);
         PendingIntent pi = PendingIntent.getActivity(
-                this, 0, i,
-                PendingIntent.FLAG_IMMUTABLE);
+                this, 0, i, PendingIntent.FLAG_IMMUTABLE);
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(getString(R.string.notif_title))

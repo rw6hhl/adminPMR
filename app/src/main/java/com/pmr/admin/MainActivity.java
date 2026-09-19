@@ -7,7 +7,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -36,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout chanContainer;
     private LinearLayout listContainer;
     private TextView   alogText;
+    private TextView   alogActiveNum;
+    private TextView   alogActiveName;
     private TextView   termLogText;
     private EditText   termInput;
 
@@ -49,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
 
         PagerAdapter adapter = new PagerAdapter(this);
         viewPager.setAdapter(adapter);
+        viewPager.setOffscreenPageLimit(5);
 
         new TabLayoutMediator(tabLayout, viewPager,
                 (tab, position) -> {
@@ -67,7 +69,6 @@ public class MainActivity extends AppCompatActivity {
         requestNotifPermission();
         startServiceSafe();
 
-        /* Периодическое обновление UI */
         handler.post(uiLoop);
     }
 
@@ -82,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
     private void refreshUI() {
         if (PmrService.pmrSocket == null) return;
 
-        /* === Вкладка 0 — список в канале === */
+        /* === Вкладка 0 — список в канале (компактный) === */
         if (chanContainer != null) {
             chanContainer.removeAllViews();
             List<ChanList.Item> lst = PmrService.chanList.snapshot();
@@ -95,23 +96,34 @@ public class MainActivity extends AppCompatActivity {
                 for (ChanList.Item it : lst) {
                     LinearLayout row = new LinearLayout(this);
                     row.setOrientation(LinearLayout.HORIZONTAL);
-                    row.setPadding(0, 4, 0, 4);
+                    row.setPadding(0, 1, 0, 1);
 
                     String ip = intToIp(it.ip);
                     String nm = PmrService.listFile.getName(it.Id);
 
                     TextView tv = new TextView(this);
-                    tv.setText(String.format("%02d  %d  %05d  %s  %s",
-                            it.i, it.ban, it.Id, ip, nm));
-                    tv.setTextSize(12);
+                    tv.setText(String.format("%02d %05d %s %s",
+                            it.i, it.Id, ip, nm));
+                    tv.setTextSize(10);
+                    tv.setMaxLines(1);
                     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                             0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
                     tv.setLayoutParams(lp);
                     row.addView(tv);
 
                     Button bb = new Button(this);
-                    bb.setText("Бан (b" + it.i + ")");
-                    bb.setTextSize(10);
+                    bb.setText(R.string.btn_ban);
+                    bb.setTextSize(9);
+                    bb.setPadding(2, 0, 2, 0);
+                    bb.setMinWidth(0);
+                    bb.setMinimumWidth(0);
+                    if (it.ban == 1) {
+                        bb.setBackgroundTintList(
+                                ContextCompat.getColorStateList(this, R.color.c_red));
+                    } else {
+                        bb.setBackgroundTintList(
+                                ContextCompat.getColorStateList(this, R.color.c_green));
+                    }
                     final int cli = it.i;
                     bb.setOnClickListener(v -> {
                         if (PmrService.pmrSocket != null)
@@ -131,12 +143,12 @@ public class MainActivity extends AppCompatActivity {
             for (ListFile.Item it : lst) {
                 TextView tv = new TextView(this);
                 tv.setText(String.format("%05d  %s", it.id, it.name));
-                tv.setTextSize(12);
+                tv.setTextSize(11);
                 listContainer.addView(tv);
             }
         }
 
-        /* === Вкладка 2 — лог активности === */
+        /* === Вкладка 2 — активность === */
         if (alogText != null) {
             List<String> tail = PmrService.activeLog.tail(6);
             StringBuilder sb = new StringBuilder();
@@ -145,7 +157,21 @@ public class MainActivity extends AppCompatActivity {
             alogText.setText(sb.toString());
         }
 
-        /* === Вкладка 3 — журнал терминала === */
+        if (alogActiveNum != null && alogActiveName != null) {
+            int act = PmrService.pmrSocket.getActiveClient();
+            if (act >= 0) {
+                alogActiveNum.setText(String.valueOf(act));
+                int id = PmrService.chanList.idByClient(act);
+                String nm = (id >= 0) ? PmrService.listFile.getName(id) : "";
+                if (nm == null || nm.trim().isEmpty()) nm = "(без имени)";
+                alogActiveName.setText(nm);
+            } else {
+                alogActiveNum.setText("—");
+                alogActiveName.setText("нет активного");
+            }
+        }
+
+        /* === Вкладка 3 — терминал === */
         if (termLogText != null) {
             List<String> tail = PmrService.webLog.tail(20);
             StringBuilder sb = new StringBuilder();
@@ -155,28 +181,30 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /* ==== Вызывается из PagerAdapter при создании вкладки ==== */
-    public void bindTabChan(LinearLayout container) {
-        this.chanContainer = container;
-    }
-    public void bindTabList(LinearLayout container) {
-        this.listContainer = container;
-    }
-    public void bindTabAlog(TextView text) {
-        this.alogText = text;
+    /* ==== Привязка View из PagerAdapter ==== */
+    public void bindTabChan(LinearLayout container) { this.chanContainer = container; }
+    public void bindTabList(LinearLayout container) { this.listContainer = container; }
+    public void bindTabAlog(TextView alog, TextView num, TextView name) {
+        this.alogText = alog;
+        this.alogActiveNum = num;
+        this.alogActiveName = name;
     }
     public void bindTabTerm(TextView log, EditText input) {
         this.termLogText = log;
         this.termInput = input;
     }
 
-    /* ==== Передаёт команду из терминала в PmrSocket ==== */
+    /* ==== Отправка команды из терминала ==== */
     public void sendTermCommand() {
         if (termInput == null) return;
         String s = termInput.getText().toString();
         if (s.isEmpty()) return;
-        if (PmrService.pmrSocket != null)
-            PmrService.pmrSocket.processCommand(s);
+        if (PmrService.pmrSocket == null) {
+            if (PmrService.webLog != null)
+                PmrService.webLog.add("служба не запущена");
+            return;
+        }
+        PmrService.pmrSocket.processCommand(s);
         termInput.setText("");
     }
 
@@ -189,7 +217,6 @@ public class MainActivity extends AppCompatActivity {
                 (ip >> 24) & 0xFF);
     }
 
-    /* ==== Разрешение на уведомления (Android 13+) ==== */
     private void requestNotifPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this,
@@ -202,7 +229,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /* ==== Запуск Foreground Service ==== */
     private void startServiceSafe() {
         Intent svc = new Intent(this, PmrService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
