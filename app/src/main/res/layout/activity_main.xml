@@ -5,16 +5,28 @@
     android:orientation="vertical"
     android:background="@color/c_bg">
 
+    <TextView
+        android:id="@+id/listTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:text="@string/list_title"
+        android:textColor="@color/c_white"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:background="@color/c_blue" />
+
     <Button
         android:id="@+id/btnSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/btn_settings"
-        android:backgroundTint="@color/c_blue"
+        android:backgroundTint="@color/c_green"
         android:textColor="@color/c_white"
         android:textSize="18sp"
-        android:paddingTop="14dp"
-        android:paddingBottom="14dp" />
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerChan"

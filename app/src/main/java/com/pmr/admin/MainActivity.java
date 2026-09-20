@@ -9,8 +9,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.Button;
+import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 /* Главный экран — список абонентов в канале.
- * Одна страница, крупный шрифт, цвет по активности.
+ * Заголовок: СПИСОК АБОНЕНТОВ.
  */
 public class MainActivity extends AppCompatActivity {
 
@@ -33,6 +33,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        TextView title = findViewById(R.id.listTitle);
+        if (title != null) {
+            title.setText(R.string.list_title);
+        }
 
         recycler = findViewById(R.id.recyclerChan);
         recycler.setLayoutManager(new LinearLayoutManager(this));
@@ -58,8 +63,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        /* Перечитать частоту обновления из настроек */
-        SharedPreferences sp = getSharedPreferences(PasswordActivity.PREFS, MODE_PRIVATE);
+        SharedPreferences sp = getSharedPreferences(
+                PasswordActivity.PREFS, MODE_PRIVATE);
         refreshMs = sp.getInt(PasswordActivity.KEY_REFRESH,
                 PasswordActivity.DEFAULT_REFRESH) * 1000;
     }
@@ -67,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        /* Останавливаем службу при закрытии приложения */
         if (isFinishing()) {
             stopService(new Intent(this, PmrService.class));
         }
@@ -84,7 +88,6 @@ public class MainActivity extends AppCompatActivity {
     private void refreshUI() {
         if (PmrService.pmrSocket == null) return;
 
-        /* Собираем данные из ChanList */
         java.util.List<ChanList.Item> lst = PmrService.chanList.snapshot();
         int activeClient = PmrService.pmrSocket.getActiveClient();
         adapter.setData(lst, activeClient, PmrService.listFile);

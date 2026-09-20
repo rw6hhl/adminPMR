@@ -1,6 +1,7 @@
 package com.pmr.admin;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,9 +15,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-/* Адаптер списка абонентов.
- * Формат строки: <ID> <Имя> <частота>  [🔴/🟢]
- * Цвет шрифта: зелёный — активный, чёрный — остальные.
+/* Адаптер списка абонентов V2.1.
+ * Формат строки: <ID> <Имя>
+ * Цвет активного — красный жирный. Неактивного — чёрный.
  * Кнопка бана: красная — забанен, зелёная — не забанен.
  */
 public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
@@ -31,7 +32,7 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
     }
 
     public void setData(List<ChanList.Item> items, int activeClient, ListFile lf) {
-        /* Сортировка: сначала активные, затем остальные */
+        /* Сортировка: сначала активный, затем остальные */
         List<ChanList.Item> sorted = new ArrayList<>();
         ChanList.Item active = null;
         for (ChanList.Item it : items) {
@@ -69,10 +70,13 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
         h.text.setText(line);
         h.text.setTextSize(24f);
 
+        /* Цвет: активный — красный жирный, остальные — чёрный обычный */
         if (it.i == activeClient) {
-            h.text.setTextColor(ContextCompat.getColor(ctx, R.color.c_green));
+            h.text.setTextColor(ContextCompat.getColor(ctx, R.color.c_red));
+            h.text.setTypeface(null, Typeface.BOLD);
         } else {
             h.text.setTextColor(ContextCompat.getColor(ctx, R.color.c_black));
+            h.text.setTypeface(null, Typeface.NORMAL);
         }
 
         /* Кнопка бана */
@@ -84,6 +88,7 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
                     ContextCompat.getColorStateList(ctx, R.color.c_green));
         }
 
+        /* Привязка каждый раз — с явной проверкой service/socket */
         final int cli = it.i;
         h.btnBan.setOnClickListener(v -> {
             if (PmrService.pmrSocket != null) {

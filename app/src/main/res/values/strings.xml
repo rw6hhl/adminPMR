@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Admin PMR</string>
-    <string name="app_version">V2.0</string>
+    <string name="app_version">V2.1</string>
 
     <string name="password_hint">Пароль</string>
     <string name="password_btn">ВОЙТИ</string>
@@ -9,9 +9,10 @@
 
     <string name="btn_settings">НАСТРОЙКИ</string>
 
-    <string name="btn_ban">БАН</string>
-    <string name="ban_on">🔴</string>
-    <string name="ban_off">🟢</string>
+    <string name="list_title">СПИСОК АБОНЕНТОВ</string>
+
+    <string name="ban_on">БАН</string>
+    <string name="ban_off">БАН</string>
 
     <string name="settings_title">НАСТРОЙКИ</string>
     <string name="settings_current_pass">Текущий пароль</string>
@@ -23,10 +24,10 @@
     <string name="settings_error_empty">Пароль не может быть пустым</string>
     <string name="settings_error_mismatch">Подтверждение не совпадает</string>
 
-    <string name="settings_refresh_title">Частота обновления списка</string>
-    <string name="settings_refresh_2">2 секунды</string>
-    <string name="settings_refresh_3">3 секунды</string>
-    <string name="settings_refresh_5">5 секунд</string>
+    <string name="settings_refresh_title">Частота обновления списка (секунды)</string>
+    <string name="settings_refresh_hint">2</string>
+
+    <string name="settings_password_title">Требовать пароль при запуске</string>
 
     <string name="settings_26_title">Подключение 26 Региона к Ростовскому репитеру</string>
     <string name="btn_260">ВЫКЛЮЧИТЬ 260</string>

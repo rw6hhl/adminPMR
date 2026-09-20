@@ -14,8 +14,9 @@ import androidx.core.app.NotificationCompat;
 import java.io.File;
 import java.io.InputStream;
 
-/* Foreground Service — держит PmrSocket, пока приложение открыто.
- * Останавливается при закрытии приложения (stopWithTask=true).
+/* Foreground Service V2.1.
+ * Держит PmrSocket, пока приложение открыто.
+ * Останавливается при закрытии (stopWithTask=true).
  */
 public class PmrService extends Service {
 
@@ -52,8 +53,6 @@ public class PmrService extends Service {
         } else {
             listFile.load(listTxt);
         }
-
-        webLog.add("Admin PMR V2.0 — служба запущена");
 
         pmrSocket = new PmrSocket(listFile, chanList, activeLog, webLog,
                 cmdQueue, dir);

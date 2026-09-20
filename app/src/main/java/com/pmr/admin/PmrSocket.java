@@ -9,7 +9,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-/* UDP-логика PMR. Все обращения к sock/serverAddr защищены проверками null. */
+/* UDP-логика PMR V2.1.
+ * Команда бана: код 222, канал 13, client. Затем 234 (запрос списка).
+ * Через 300 мс — повторный 234 для гарантированного обновления.
+ */
 public class PmrSocket {
 
     public static final String IP_SERVER = "185.221.154.39";
@@ -61,17 +64,12 @@ public class PmrSocket {
             sock.setSoTimeout(100);
             serverAddr = InetAddress.getByName(IP_SERVER);
         } catch (Exception e) {
-            if (webLog != null) webLog.add("сокет: " + e.getMessage());
             return;
         }
 
         if (MyPChannel == 0) kanal_PRD = 0;
         else kanal_PRD = ((MyMailIndex & 0xF) * 8) + MyPChannel;
         kanal_Secret = (MyMailIndex & 0xFFFFFFF0) >> 4;
-
-        if (webLog != null)
-            webLog.add("PMR: порт " + PORT_PRM + ", канал " + kanal_PRD
-                    + ", секрет " + kanal_Secret);
 
         running = true;
         threadUdp = new Thread(this::udpLoop, "pmr-udp");
@@ -88,37 +86,11 @@ public class PmrSocket {
     private void timerLoop() {
         int cikl_PRD = 0;
         int cikl = 0;
-        int prevActive = -1;
-        long prevStart = 0;
 
         while (running) {
             if (KtoTic > 0) {
                 KtoTic++;
                 if (KtoTic > 10) { KtoActiv = -1; KtoTic = 0; }
-            }
-
-            int cur = active_client_num;
-            if (cur != prevActive) {
-                long now = System.currentTimeMillis() / 1000L;
-                if (prevActive >= 0) {
-                    int dur = (int)(now - prevStart);
-                    activeLog.add(fmtTime(now) + " " + prevActive + " выкл (" + dur + "с)");
-                }
-                if (cur >= 0) {
-                    int id = chanList.idByClient(cur);
-                    String nm = (id >= 0) ? listFile.getName(id) : "";
-                    if (nm == null) nm = "";
-                    nm = nm.trim();
-                    if (nm.length() > 24) nm = nm.substring(0, 24);
-                    if (nm.isEmpty()) {
-                        activeLog.add(fmtTime(now) + " " + cur + " вкл");
-                    } else {
-                        activeLog.add(fmtTime(now) + " " + cur + " вкл " + nm);
-                    }
-                    prevStart = now;
-                }
-                prevActive = cur;
-                sendL();
             }
 
             if (active_client_num >= 0) {
@@ -253,9 +225,16 @@ public class PmrSocket {
         sendCmdHeader(234, 13, 0);
     }
 
+    /* Бан: код 222, канал 13, client.
+     * Затем 234 (обновить список).
+     * Через 300 мс — ещё раз 234, чтобы гарантированно получить свежие данные. */
     public void sendBan(int client) {
         sendCmdHeader(222, 13, client);
         sendCmdHeader(234, 13, 0);
+        new Thread(() -> {
+            try { Thread.sleep(300); } catch (InterruptedException ignored) {}
+            sendCmdHeader(234, 13, 0);
+        }).start();
     }
 
     public void send260(int v) {
@@ -308,15 +287,7 @@ public class PmrSocket {
         } catch (Exception ignored) {}
     }
 
-    /* Оставлено для совместимости, но в V2.0 не используется */
     public void processCommand(String raw) {
         if (raw == null) return;
-    }
-
-    private static final SimpleDateFormat TIME_FMT =
-            new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-
-    private static String fmtTime(long unixSec) {
-        return "[" + TIME_FMT.format(new Date(unixSec * 1000L)) + "]";
     }
 }

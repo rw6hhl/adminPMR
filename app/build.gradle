@@ -10,8 +10,8 @@ android {
         applicationId "com.pmr.admin"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "0.1-apk"
+        versionCode 21
+        versionName "2.1"
     }
 
     buildTypes {
@@ -24,6 +24,12 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "app-v" + variant.versionName.replace(".", "_") + ".apk"
+        }
     }
 }
 

@@ -3,25 +3,26 @@ package com.pmr.admin;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-/* Экран настроек.
+/* Экран настроек V2.1.
  * Разделы:
  * 1) Смена пароля.
- * 2) Частота обновления списка.
- * 3) Подключение 26 региона к Ростовскому репитеру (кнопки 260/261).
+ * 2) Частота обновления списка (поле ввода вручную).
+ * 3) Требовать пароль (чекбокс).
+ * 4) Подключение 26 региона (кнопки 260/261).
  */
 public class SettingsActivity extends AppCompatActivity {
 
     private EditText passCurrent;
     private EditText passNew;
     private EditText passConfirm;
-    private RadioGroup refreshGroup;
+    private EditText refreshInput;
+    private CheckBox requirePassBox;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,7 +32,8 @@ public class SettingsActivity extends AppCompatActivity {
         passCurrent = findViewById(R.id.passCurrent);
         passNew     = findViewById(R.id.passNew);
         passConfirm = findViewById(R.id.passConfirm);
-        refreshGroup = findViewById(R.id.refreshGroup);
+        refreshInput = findViewById(R.id.refreshInput);
+        requirePassBox = findViewById(R.id.requirePassBox);
 
         Button saveBtn = findViewById(R.id.btnSaveSettings);
         if (saveBtn != null) saveBtn.setOnClickListener(v -> saveSettings());
@@ -49,18 +51,26 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void loadSettings() {
-        SharedPreferences sp = getSharedPreferences(PasswordActivity.PREFS, MODE_PRIVATE);
+        SharedPreferences sp = getSharedPreferences(
+                PasswordActivity.PREFS, MODE_PRIVATE);
+
         int r = sp.getInt(PasswordActivity.KEY_REFRESH,
                 PasswordActivity.DEFAULT_REFRESH);
-        switch (r) {
-            case 3: refreshGroup.check(R.id.rb3); break;
-            case 5: refreshGroup.check(R.id.rb5); break;
-            default: refreshGroup.check(R.id.rb2); break;
+        if (refreshInput != null) {
+            refreshInput.setText(String.valueOf(r));
+        }
+
+        boolean requirePass = sp.getBoolean(
+                PasswordActivity.KEY_REQUIRE_PASSWORD, true);
+        if (requirePassBox != null) {
+            requirePassBox.setChecked(requirePass);
         }
     }
 
     private void saveSettings() {
-        SharedPreferences sp = getSharedPreferences(PasswordActivity.PREFS, MODE_PRIVATE);
+        SharedPreferences sp = getSharedPreferences(
+                PasswordActivity.PREFS, MODE_PRIVATE);
+
         String cur = sp.getString(PasswordActivity.KEY_PASSWORD,
                 PasswordActivity.DEFAULT_PASSWORD);
 
@@ -88,11 +98,31 @@ public class SettingsActivity extends AppCompatActivity {
             sp.edit().putString(PasswordActivity.KEY_PASSWORD, newPass).apply();
         }
 
-        /* Частота обновления */
-        int refresh = 2;
-        if (refreshGroup.getCheckedRadioButtonId() == R.id.rb3) refresh = 3;
-        else if (refreshGroup.getCheckedRadioButtonId() == R.id.rb5) refresh = 5;
+        /* Частота обновления — читаем из поля ввода */
+        int refresh = PasswordActivity.DEFAULT_REFRESH;
+        try {
+            String rs = refreshInput.getText().toString().trim();
+            if (!rs.isEmpty()) {
+                int v = Integer.parseInt(rs);
+                if (v >= 1 && v <= 60) {
+                    refresh = v;
+                } else {
+                    Toast.makeText(this, "Частота: 1..60",
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Частота: число",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
         sp.edit().putInt(PasswordActivity.KEY_REFRESH, refresh).apply();
+
+        /* Требовать пароль */
+        boolean requirePass = requirePassBox != null && requirePassBox.isChecked();
+        sp.edit().putBoolean(PasswordActivity.KEY_REQUIRE_PASSWORD,
+                requirePass).apply();
 
         Toast.makeText(this, R.string.settings_saved,
                 Toast.LENGTH_SHORT).show();
