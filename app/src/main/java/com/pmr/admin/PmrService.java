@@ -14,7 +14,9 @@ import androidx.core.app.NotificationCompat;
 import java.io.File;
 import java.io.InputStream;
 
-/* Foreground Service — держит PmrSocket в фоне. */
+/* Foreground Service — держит PmrSocket, пока приложение открыто.
+ * Останавливается при закрытии приложения (stopWithTask=true).
+ */
 public class PmrService extends Service {
 
     public static final String CHANNEL_ID = "pmr_admin_ch";
@@ -51,7 +53,7 @@ public class PmrService extends Service {
             listFile.load(listTxt);
         }
 
-        webLog.add("Admin PMR V1.0 — служба запущена");
+        webLog.add("Admin PMR V2.0 — служба запущена");
 
         pmrSocket = new PmrSocket(listFile, chanList, activeLog, webLog,
                 cmdQueue, dir);
@@ -63,7 +65,7 @@ public class PmrService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     @Override

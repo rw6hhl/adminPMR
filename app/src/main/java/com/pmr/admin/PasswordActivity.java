@@ -1,6 +1,7 @@
 package com.pmr.admin;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -8,14 +9,17 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-/* Экран ввода пароля.
- * Пароль: Rostov2026.
- * Спрашивается ОДИН РАЗ при запуске программы.
- * После верного ввода — переход к MainActivity.
+/* Экран ввода пароля — первый экран при запуске.
+ * Пароль хранится в SharedPreferences.
+ * По умолчанию: Rostov2026.
  */
 public class PasswordActivity extends AppCompatActivity {
 
-    private static final String PASSWORD = "Rostov2026";
+    public static final String PREFS = "admin_pmr_prefs";
+    public static final String KEY_PASSWORD = "password";
+    public static final String KEY_REFRESH = "refresh_sec";
+    public static final String DEFAULT_PASSWORD = "Rostov2026";
+    public static final int    DEFAULT_REFRESH = 2;
 
     private EditText passInput;
 
@@ -35,12 +39,15 @@ public class PasswordActivity extends AppCompatActivity {
     private void checkPassword() {
         if (passInput == null) return;
         String entered = passInput.getText().toString();
-        if (PASSWORD.equals(entered)) {
+        SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
+        String saved = sp.getString(KEY_PASSWORD, DEFAULT_PASSWORD);
+
+        if (saved.equals(entered)) {
             Intent i = new Intent(PasswordActivity.this, MainActivity.class);
             startActivity(i);
             finish();
         } else {
-            Toast.makeText(this, "Неверный пароль",
+            Toast.makeText(this, R.string.password_error,
                     Toast.LENGTH_SHORT).show();
             passInput.setText("");
         }

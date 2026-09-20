@@ -8,7 +8,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -20,9 +19,8 @@
         tools:targetApi="31">
 
         <activity
-            android:name=".SplashActivity"
+            android:name=".PasswordActivity"
             android:exported="true"
-            android:theme="@style/Theme.AdminPMR.Splash"
             android:configChanges="orientation|screenSize|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -31,29 +29,20 @@
         </activity>
 
         <activity
-            android:name=".PasswordActivity"
+            android:name=".MainActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize|keyboardHidden" />
 
         <activity
-            android:name=".MainActivity"
+            android:name=".SettingsActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize|keyboardHidden" />
 
         <service
             android:name=".PmrService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
-        <receiver
-            android:name=".BootReceiver"
-            android:exported="true"
-            android:enabled="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-            </intent-filter>
-        </receiver>
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="true" />
 
     </application>
 </manifest>

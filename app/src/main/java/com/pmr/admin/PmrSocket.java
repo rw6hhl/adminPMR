@@ -9,9 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-/* UDP-логика PMR. Адаптирована под Android.
- * Все обращения к sock/serverAddr защищены проверками null.
- */
+/* UDP-логика PMR. Все обращения к sock/serverAddr защищены проверками null. */
 public class PmrSocket {
 
     public static final String IP_SERVER = "185.221.154.39";
@@ -87,7 +85,6 @@ public class PmrSocket {
         try { if (sock != null) sock.close(); } catch (Exception ignored) {}
     }
 
-    /* ============ Таймер ============ */
     private void timerLoop() {
         int cikl_PRD = 0;
         int cikl = 0;
@@ -112,7 +109,6 @@ public class PmrSocket {
                     String nm = (id >= 0) ? listFile.getName(id) : "";
                     if (nm == null) nm = "";
                     nm = nm.trim();
-                    /* обрезаем длинное имя */
                     if (nm.length() > 24) nm = nm.substring(0, 24);
                     if (nm.isEmpty()) {
                         activeLog.add(fmtTime(now) + " " + cur + " вкл");
@@ -150,7 +146,6 @@ public class PmrSocket {
         }
     }
 
-    /* ============ UDP приём ============ */
     private void udpLoop() {
         int KolInKanal = 0;
         byte[] buf = new byte[1640];
@@ -221,7 +216,6 @@ public class PmrSocket {
             it.ban  = buf[off + 12] & 0xFF;
             chanList.add(it);
         }
-        webLog.add("--- список ---");
     }
 
     private void handleListFile(byte[] buf, int n, int client) {
@@ -232,13 +226,9 @@ public class PmrSocket {
             fos.write(text.getBytes("UTF-8"));
             fos.close();
             listFile.load(f);
-            webLog.add("list.txt обновлён, Wsego = " + listFile.count());
-        } catch (Exception e) {
-            webLog.add("ошибка list.txt: " + e.getMessage());
-        }
+        } catch (Exception ignored) {}
     }
 
-    /* ============ Отправка ============ */
     private void sendRaw(byte[] buf) {
         DatagramSocket s = sock;
         InetAddress a = serverAddr;
@@ -261,18 +251,15 @@ public class PmrSocket {
 
     public void sendL() {
         sendCmdHeader(234, 13, 0);
-        if (webLog != null) webLog.add(fmtTime() + " l");
     }
 
     public void sendBan(int client) {
         sendCmdHeader(222, 13, client);
         sendCmdHeader(234, 13, 0);
-        if (webLog != null) webLog.add(fmtTime() + " b" + client);
     }
 
     public void send260(int v) {
         sendCmdHeader(221, 13, v);
-        if (webLog != null) webLog.add(fmtTime() + " 260/" + v);
     }
 
     public void sendRename(String text) {
@@ -288,113 +275,48 @@ public class PmrSocket {
             buf[4 + txt.length] = 0;
             DatagramSocket s = sock;
             InetAddress a = serverAddr;
-            if (s == null || a == null) {
-                webLog.add("ошибка: сокет не открыт");
-                return;
-            }
-            DatagramPacket p = new DatagramPacket(buf, buf.length, a, 15999);
-            s.send(p);
-
-            byte[] h = new byte[4];
-            h[0] = (byte)123;
-            h[1] = 13;
-            h[2] = 0;
-            h[3] = 0;
-            DatagramPacket p2 = new DatagramPacket(h, 4, a, 15999);
-            s.send(p2);
-            webLog.add(fmtTime() + " rename");
-        } catch (Exception e) {
-            webLog.add("ошибка rename: " + e.getMessage());
-        }
+            if (s == null || a == null) return;
+            s.send(new DatagramPacket(buf, buf.length, a, 15999));
+        } catch (Exception ignored) {}
     }
 
     public void sendDelete(int id) {
         try {
             DatagramSocket s = sock;
             InetAddress a = serverAddr;
-            if (s == null || a == null) { webLog.add("ошибка: сокет не открыт"); return; }
+            if (s == null || a == null) return;
             byte[] h = new byte[4];
             h[0] = (byte)143;
             h[1] = 13;
             h[2] = (byte)(id & 0xFF);
             h[3] = (byte)((id >> 8) & 0xFF);
             s.send(new DatagramPacket(h, 4, a, 15999));
-
-            byte[] h2 = new byte[4];
-            h2[0] = (byte)123;
-            h2[1] = 13;
-            h2[2] = 0;
-            h2[3] = 0;
-            s.send(new DatagramPacket(h2, 4, a, 15999));
-            webLog.add(fmtTime() + " delete " + id);
-        } catch (Exception e) {
-            webLog.add("ошибка delete: " + e.getMessage());
-        }
+        } catch (Exception ignored) {}
     }
 
     public void sendList() {
         try {
             DatagramSocket s = sock;
             InetAddress a = serverAddr;
-            if (s == null || a == null) { webLog.add("ошибка: сокет не открыт"); return; }
+            if (s == null || a == null) return;
             byte[] h = new byte[4];
             h[0] = (byte)123;
             h[1] = 13;
             h[2] = 0;
             h[3] = 0;
             s.send(new DatagramPacket(h, 4, a, 15999));
-            webLog.add(fmtTime() + " list");
-        } catch (Exception e) {
-            webLog.add("ошибка list: " + e.getMessage());
-        }
+        } catch (Exception ignored) {}
     }
 
+    /* Оставлено для совместимости, но в V2.0 не используется */
     public void processCommand(String raw) {
         if (raw == null) return;
-        String s = raw.trim();
-        if (s.isEmpty()) return;
-        webLog.add(fmtTime() + " > " + s);
-
-        if (s.equals("exit") || s.equals("EXIT")) { stop(); return; }
-        if (s.startsWith("delete") || s.startsWith("DELETE")) {
-            try {
-                int id = Integer.parseInt(s.substring(7).trim());
-                sendDelete(id);
-            } catch (Exception e) { webLog.add("ошибка delete"); }
-            return;
-        }
-        if (s.startsWith("rename") || s.startsWith("RENAME")) {
-            String body = s.substring(6).trim();
-            if (body.isEmpty()) { webLog.add("ошибка rename: пусто"); return; }
-            sendRename(body);
-            return;
-        }
-        if (s.startsWith("list") || s.startsWith("LIST")) { sendList(); return; }
-        if (s.equals("l")) { sendL(); return; }
-        if (s.length() == 3 && s.charAt(0) == 'b') {
-            try {
-                int k = Integer.parseInt(s.substring(1));
-                sendBan(k);
-            } catch (Exception ignored) {}
-            return;
-        }
-        if (s.length() == 3 && s.startsWith("26")) {
-            int v = (s.charAt(2) == '0') ? 0 : 1;
-            send260(v);
-            return;
-        }
-        webLog.add(fmtTime() + " неизвестная команда");
     }
 
-    /* ============ Утилиты времени ============ */
     private static final SimpleDateFormat TIME_FMT =
             new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
 
     private static String fmtTime(long unixSec) {
         return "[" + TIME_FMT.format(new Date(unixSec * 1000L)) + "]";
-    }
-
-    private static String fmtTime() {
-        return "[" + TIME_FMT.format(new Date()) + "]";
     }
 }
