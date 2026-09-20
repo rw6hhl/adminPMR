@@ -100,24 +100,14 @@
             android:textStyle="bold" />
 
         <Button
-            android:id="@+id/btn260"
-            android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:layout_marginTop="12dp"
-            android:text="@string/btn_260"
-            android:textSize="20sp"
-            android:backgroundTint="@color/c_red"
-            android:textColor="@color/c_white" />
-
-        <Button
-            android:id="@+id/btn261"
+            android:id="@+id/btn26"
             android:layout_width="match_parent"
             android:layout_height="80dp"
             android:layout_marginTop="12dp"
             android:layout_marginBottom="16dp"
-            android:text="@string/btn_261"
+            android:text="@string/btn_26_off"
             android:textSize="20sp"
-            android:backgroundTint="@color/c_green"
+            android:backgroundTint="@color/c_red"
             android:textColor="@color/c_white" />
 
     </LinearLayout>

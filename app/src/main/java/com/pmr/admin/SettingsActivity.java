@@ -9,20 +9,22 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-/* Экран настроек V2.1.
- * Разделы:
- * 1) Смена пароля.
- * 2) Частота обновления списка (поле ввода вручную).
- * 3) Требовать пароль (чекбокс).
- * 4) Подключение 26 региона (кнопки 260/261).
+/* Экран настроек V2.2.
+ * - Смена пароля.
+ * - Частота обновления списка (ввод вручную).
+ * - Требовать пароль (чекбокс).
+ * - Одна кнопка управления 260/261 с индикацией ВКЛЮЧЕНО / ВЫКЛЮЧЕНО.
  */
 public class SettingsActivity extends AppCompatActivity {
+
+    public static final String KEY_26_STATE = "state_26";
 
     private EditText passCurrent;
     private EditText passNew;
     private EditText passConfirm;
     private EditText refreshInput;
     private CheckBox requirePassBox;
+    private Button btn26;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,18 +36,12 @@ public class SettingsActivity extends AppCompatActivity {
         passConfirm = findViewById(R.id.passConfirm);
         refreshInput = findViewById(R.id.refreshInput);
         requirePassBox = findViewById(R.id.requirePassBox);
+        btn26 = findViewById(R.id.btn26);
 
         Button saveBtn = findViewById(R.id.btnSaveSettings);
         if (saveBtn != null) saveBtn.setOnClickListener(v -> saveSettings());
 
-        Button btn260 = findViewById(R.id.btn260);
-        Button btn261 = findViewById(R.id.btn261);
-        if (btn260 != null) btn260.setOnClickListener(v -> {
-            if (PmrService.pmrSocket != null) PmrService.pmrSocket.send260(0);
-        });
-        if (btn261 != null) btn261.setOnClickListener(v -> {
-            if (PmrService.pmrSocket != null) PmrService.pmrSocket.send260(1);
-        });
+        if (btn26 != null) btn26.setOnClickListener(v -> toggle26());
 
         loadSettings();
     }
@@ -62,8 +58,43 @@ public class SettingsActivity extends AppCompatActivity {
 
         boolean requirePass = sp.getBoolean(
                 PasswordActivity.KEY_REQUIRE_PASSWORD, true);
-        if (requirePassBox != null) {
-            requirePassBox.setChecked(requirePass);
+        if (requirePassBox != null) requirePassBox.setChecked(requirePass);
+
+        boolean on26 = sp.getBoolean(KEY_26_STATE, false);
+        updateBtn26(on26);
+    }
+
+    private void toggle26() {
+        SharedPreferences sp = getSharedPreferences(
+                PasswordActivity.PREFS, MODE_PRIVATE);
+        boolean on26 = sp.getBoolean(KEY_26_STATE, false);
+        boolean newState = !on26;
+
+        if (PmrService.pmrSocket == null) {
+            Toast.makeText(this, R.string.toast_26_null,
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+        PmrService.pmrSocket.send260(newState ? 1 : 0);
+
+        sp.edit().putBoolean(KEY_26_STATE, newState).apply();
+        updateBtn26(newState);
+
+        Toast.makeText(this,
+                newState ? R.string.toast_26_on : R.string.toast_26_off,
+                Toast.LENGTH_SHORT).show();
+    }
+
+    private void updateBtn26(boolean on) {
+        if (btn26 == null) return;
+        if (on) {
+            btn26.setText(R.string.btn_26_on);
+            btn26.setBackgroundTintList(
+                    getColorStateList(R.color.c_green));
+        } else {
+            btn26.setText(R.string.btn_26_off);
+            btn26.setBackgroundTintList(
+                    getColorStateList(R.color.c_red));
         }
     }
 
@@ -78,7 +109,6 @@ public class SettingsActivity extends AppCompatActivity {
         String newPass = passNew.getText().toString();
         String confirmPass = passConfirm.getText().toString();
 
-        /* Смена пароля — если хотя бы одно поле заполнено */
         if (!enteredCur.isEmpty() || !newPass.isEmpty() || !confirmPass.isEmpty()) {
             if (!cur.equals(enteredCur)) {
                 Toast.makeText(this, R.string.settings_error_current,
@@ -98,7 +128,6 @@ public class SettingsActivity extends AppCompatActivity {
             sp.edit().putString(PasswordActivity.KEY_PASSWORD, newPass).apply();
         }
 
-        /* Частота обновления — читаем из поля ввода */
         int refresh = PasswordActivity.DEFAULT_REFRESH;
         try {
             String rs = refreshInput.getText().toString().trim();
@@ -119,7 +148,6 @@ public class SettingsActivity extends AppCompatActivity {
         }
         sp.edit().putInt(PasswordActivity.KEY_REFRESH, refresh).apply();
 
-        /* Требовать пароль */
         boolean requirePass = requirePassBox != null && requirePassBox.isChecked();
         sp.edit().putBoolean(PasswordActivity.KEY_REQUIRE_PASSWORD,
                 requirePass).apply();

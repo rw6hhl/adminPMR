@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Admin PMR</string>
-    <string name="app_version">V2.1</string>
+    <string name="app_version">V2.2</string>
 
     <string name="password_hint">Пароль</string>
     <string name="password_btn">ВОЙТИ</string>
@@ -30,10 +30,18 @@
     <string name="settings_password_title">Требовать пароль при запуске</string>
 
     <string name="settings_26_title">Подключение 26 Региона к Ростовскому репитеру</string>
-    <string name="btn_260">ВЫКЛЮЧИТЬ 260</string>
-    <string name="btn_261">ВКЛЮЧИТЬ 261</string>
+
+    <string name="btn_26_on">ВКЛЮЧЕНО</string>
+    <string name="btn_26_off">ВЫКЛЮЧЕНО</string>
 
     <string name="notif_channel">PMR Admin</string>
     <string name="notif_title">PMR Admin работает</string>
     <string name="notif_text">Соединение с сервером PMR активно</string>
+
+    <string name="toast_ban_sent">Бан отправлен b%1$d</string>
+    <string name="toast_ban_null">Служба не готова</string>
+    <string name="toast_ban_not_running">Сокет не открыт</string>
+    <string name="toast_26_off">260 отправлено (выключить)</string>
+    <string name="toast_26_on">261 отправлено (включить)</string>
+    <string name="toast_26_null">Служба не готова</string>
 </resources>

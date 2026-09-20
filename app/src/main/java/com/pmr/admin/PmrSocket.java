@@ -5,13 +5,11 @@ import java.io.FileOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 
-/* UDP-логика PMR V2.1.
- * Команда бана: код 222, канал 13, client. Затем 234 (запрос списка).
- * Через 300 мс — повторный 234 для гарантированного обновления.
+/* UDP-логика PMR V2.2.
+ * Команда бана: 222, канал 13, client.
+ * Команда 260/261: 221, канал 13, значение (0 или 1).
+ * Дополнительная диагностика в isRunning().
  */
 public class PmrSocket {
 
@@ -55,7 +53,11 @@ public class PmrSocket {
     }
 
     public int getActiveClient() { return active_client_num; }
-    public boolean isRunning() { return running; }
+
+    /* Проверка: работает ли сокет и установлен ли канал */
+    public boolean isRunning() {
+        return running && sock != null && serverAddr != null;
+    }
 
     public void start() {
         if (running) return;
@@ -225,9 +227,8 @@ public class PmrSocket {
         sendCmdHeader(234, 13, 0);
     }
 
-    /* Бан: код 222, канал 13, client.
-     * Затем 234 (обновить список).
-     * Через 300 мс — ещё раз 234, чтобы гарантированно получить свежие данные. */
+    /* Бан: 222, канал 13, client. Затем 234.
+     * Через 300 мс — ещё раз 234. */
     public void sendBan(int client) {
         sendCmdHeader(222, 13, client);
         sendCmdHeader(234, 13, 0);
@@ -237,6 +238,7 @@ public class PmrSocket {
         }).start();
     }
 
+    /* 260/261: 221, канал 13, value. */
     public void send260(int v) {
         sendCmdHeader(221, 13, v);
     }

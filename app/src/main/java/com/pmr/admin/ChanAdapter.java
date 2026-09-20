@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -15,10 +16,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-/* Адаптер списка абонентов V2.1.
- * Формат строки: <ID> <Имя>
- * Цвет активного — красный жирный. Неактивного — чёрный.
- * Кнопка бана: красная — забанен, зелёная — не забанен.
+/* Адаптер списка абонентов V2.2.
+ * С диагностическими Toast при нажатии кнопки БАН.
  */
 public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
 
@@ -32,7 +31,6 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
     }
 
     public void setData(List<ChanList.Item> items, int activeClient, ListFile lf) {
-        /* Сортировка: сначала активный, затем остальные */
         List<ChanList.Item> sorted = new ArrayList<>();
         ChanList.Item active = null;
         for (ChanList.Item it : items) {
@@ -42,9 +40,7 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
                 sorted.add(it);
             }
         }
-        if (active != null) {
-            sorted.add(0, active);
-        }
+        if (active != null) sorted.add(0, active);
         this.items = sorted;
         this.activeClient = activeClient;
         this.listFile = lf;
@@ -70,7 +66,6 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
         h.text.setText(line);
         h.text.setTextSize(24f);
 
-        /* Цвет: активный — красный жирный, остальные — чёрный обычный */
         if (it.i == activeClient) {
             h.text.setTextColor(ContextCompat.getColor(ctx, R.color.c_red));
             h.text.setTypeface(null, Typeface.BOLD);
@@ -79,7 +74,6 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
             h.text.setTypeface(null, Typeface.NORMAL);
         }
 
-        /* Кнопка бана */
         if (it.ban == 1) {
             h.btnBan.setBackgroundTintList(
                     ContextCompat.getColorStateList(ctx, R.color.c_red));
@@ -88,12 +82,24 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
                     ContextCompat.getColorStateList(ctx, R.color.c_green));
         }
 
-        /* Привязка каждый раз — с явной проверкой service/socket */
         final int cli = it.i;
+        final int banState = it.ban;
         h.btnBan.setOnClickListener(v -> {
-            if (PmrService.pmrSocket != null) {
-                PmrService.pmrSocket.sendBan(cli);
+            /* Диагностика */
+            if (PmrService.pmrSocket == null) {
+                Toast.makeText(ctx, R.string.toast_ban_null,
+                        Toast.LENGTH_SHORT).show();
+                return;
             }
+            if (!PmrService.pmrSocket.isRunning()) {
+                Toast.makeText(ctx, R.string.toast_ban_not_running,
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+            PmrService.pmrSocket.sendBan(cli);
+            String msg = ctx.getString(R.string.toast_ban_sent, cli)
+                    + (banState == 1 ? " (разбан)" : " (бан)");
+            Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show();
         });
     }
 
