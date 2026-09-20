@@ -14,10 +14,7 @@ import androidx.core.app.NotificationCompat;
 import java.io.File;
 import java.io.InputStream;
 
-/* Foreground Service V2.3.
- * Держит PmrSocket, пока приложение открыто.
- * Останавливается при закрытии (stopWithTask=true).
- */
+/* Foreground Service V2.4. */
 public class PmrService extends Service {
 
     public static final String CHANNEL_ID = "pmr_admin_ch";
@@ -34,6 +31,8 @@ public class PmrService extends Service {
     public void onCreate() {
         super.onCreate();
 
+        AppLog.add("PmrService.onCreate() — старт");
+
         File dir = getFilesDir();
         File listTxt = new File(dir, "list.txt");
 
@@ -49,9 +48,13 @@ public class PmrService extends Service {
                 listFile.loadFromStream(is);
                 listFile.save(listTxt);
                 is.close();
-            } catch (Exception ignored) {}
+                AppLog.add("list.txt распакован из res/raw");
+            } catch (Exception e) {
+                AppLog.add("ошибка распаковки list.txt: " + e);
+            }
         } else {
             listFile.load(listTxt);
+            AppLog.add("list.txt загружен (" + listFile.count() + " записей)");
         }
 
         pmrSocket = new PmrSocket(getApplicationContext(),
@@ -61,6 +64,8 @@ public class PmrService extends Service {
 
         createChannel();
         startForeground(NOTIF_ID, buildNotification());
+
+        AppLog.add("PmrService: служба запущена, уведомление показано");
     }
 
     @Override
@@ -70,6 +75,7 @@ public class PmrService extends Service {
 
     @Override
     public void onDestroy() {
+        AppLog.add("PmrService.onDestroy()");
         if (pmrSocket != null) pmrSocket.stop();
         super.onDestroy();
     }

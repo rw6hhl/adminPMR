@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Admin PMR</string>
-    <string name="app_version">V2.3</string>
+    <string name="app_version">V2.4</string>
 
     <string name="password_hint">Пароль</string>
     <string name="password_btn">ВОЙТИ</string>
@@ -38,6 +38,18 @@
 
     <string name="btn_26_on">ВКЛЮЧЕНО</string>
     <string name="btn_26_off">ВЫКЛЮЧЕНО</string>
+
+    <string name="settings_log_title">Логи приложения (диагностика)</string>
+    <string name="settings_log_open">ОТКРЫТЬ ЛОГИ</string>
+
+    <string name="log_title">ЛОГИ ПРИЛОЖЕНИЯ</string>
+    <string name="log_clear">ОЧИСТИТЬ</string>
+    <string name="log_save">СОХРАНИТЬ В ФАЙЛ</string>
+    <string name="log_share">ПОДЕЛИТЬСЯ</string>
+    <string name="log_mail">ОТПРАВИТЬ НА rw6hhl@mail.ru</string>
+    <string name="log_saved">Лог сохранён</string>
+    <string name="log_save_error">Ошибка сохранения</string>
+    <string name="log_empty">Лог пуст</string>
 
     <string name="notif_channel">PMR Admin</string>
     <string name="notif_title">PMR Admin работает</string>

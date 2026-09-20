@@ -1,5 +1,6 @@
 package com.pmr.admin;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
@@ -9,14 +10,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-/* Экран настроек V2.3.
- * Разделы:
- *  1) Смена пароля.
- *  2) Частота обновления списка (секунды).
- *  3) Порт приёма UDP.
- *  4) Требовать пароль при запуске.
- *  5) Показывать проверку системы при запуске.
- *  6) Одна кнопка управления 260/261.
+/* Экран настроек V2.4.
+ * Дополнительно: кнопка "ОТКРЫТЬ ЛОГИ".
  */
 public class SettingsActivity extends AppCompatActivity {
 
@@ -28,6 +23,7 @@ public class SettingsActivity extends AppCompatActivity {
     private CheckBox requirePassBox;
     private CheckBox checkSystemBox;
     private Button btn26;
+    private Button btnOpenLog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,11 +38,17 @@ public class SettingsActivity extends AppCompatActivity {
         requirePassBox = findViewById(R.id.requirePassBox);
         checkSystemBox = findViewById(R.id.checkSystemBox);
         btn26 = findViewById(R.id.btn26);
+        btnOpenLog = findViewById(R.id.btnOpenLog);
 
         Button saveBtn = findViewById(R.id.btnSaveSettings);
         if (saveBtn != null) saveBtn.setOnClickListener(v -> saveSettings());
 
         if (btn26 != null) btn26.setOnClickListener(v -> toggle26());
+
+        if (btnOpenLog != null) btnOpenLog.setOnClickListener(v -> {
+            Intent i = new Intent(SettingsActivity.this, LogActivity.class);
+            startActivity(i);
+        });
 
         loadSettings();
     }
@@ -118,7 +120,6 @@ public class SettingsActivity extends AppCompatActivity {
         String newPass = passNew.getText().toString();
         String confirmPass = passConfirm.getText().toString();
 
-        /* Пароль */
         if (!enteredCur.isEmpty() || !newPass.isEmpty() || !confirmPass.isEmpty()) {
             if (!cur.equals(enteredCur)) {
                 Toast.makeText(this, R.string.settings_error_current,
@@ -138,7 +139,6 @@ public class SettingsActivity extends AppCompatActivity {
             sp.edit().putString(PasswordActivity.KEY_PASSWORD, newPass).apply();
         }
 
-        /* Частота обновления */
         int refresh = PasswordActivity.DEFAULT_REFRESH;
         try {
             String rs = refreshInput.getText().toString().trim();
@@ -158,7 +158,6 @@ public class SettingsActivity extends AppCompatActivity {
         }
         sp.edit().putInt(PasswordActivity.KEY_REFRESH, refresh).apply();
 
-        /* Порт */
         int port = PasswordActivity.DEFAULT_PORT_PRM;
         try {
             String ps = portInput.getText().toString().trim();
@@ -178,12 +177,10 @@ public class SettingsActivity extends AppCompatActivity {
         }
         sp.edit().putInt(PasswordActivity.KEY_PORT_PRM, port).apply();
 
-        /* Требовать пароль */
         boolean requirePass = requirePassBox != null && requirePassBox.isChecked();
         sp.edit().putBoolean(PasswordActivity.KEY_REQUIRE_PASSWORD,
                 requirePass).apply();
 
-        /* Показывать проверку системы */
         boolean checkSystem = checkSystemBox != null && checkSystemBox.isChecked();
         sp.edit().putBoolean(PasswordActivity.KEY_CHECK_SYSTEM,
                 checkSystem).apply();
