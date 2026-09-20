@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -15,10 +16,9 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-/* Экран проверки системы V2.5.
- * Проверки выполняются в фоне.
- * Переход к следующему экрану — ТОЛЬКО по кнопке "ПРОДОЛЖИТЬ".
- * Автоматического перехода через 3 секунды — НЕТ.
+/* Экран проверки системы V2.6.
+ * Экран НЕ ГАСНЕТ, пока приложение открыто (FLAG_KEEP_SCREEN_ON).
+ * Переход — только по кнопке "ПРОДОЛЖИТЬ".
  */
 public class CheckActivity extends AppCompatActivity {
 
@@ -29,6 +29,9 @@ public class CheckActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         setContentView(R.layout.activity_check);
 
         tvPort = findViewById(R.id.checkPortVal);
@@ -43,10 +46,7 @@ public class CheckActivity extends AppCompatActivity {
             btnContinue.setOnClickListener(v -> goNext());
         }
 
-        /* Мгновенно показываем то, что уже известно */
         showKnownValues();
-
-        /* Проверки выполняем в фоне */
         new Thread(this::runChecks).start();
     }
 

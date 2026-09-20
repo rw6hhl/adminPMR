@@ -3,6 +3,7 @@ package com.pmr.admin;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -10,8 +11,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-/* Экран настроек V2.4.
- * Дополнительно: кнопка "ОТКРЫТЬ ЛОГИ".
+/* Экран настроек V2.6.
+ * Экран НЕ ГАСНЕТ, пока приложение открыто (FLAG_KEEP_SCREEN_ON).
  */
 public class SettingsActivity extends AppCompatActivity {
 
@@ -28,6 +29,9 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         setContentView(R.layout.activity_settings);
 
         passCurrent = findViewById(R.id.passCurrent);

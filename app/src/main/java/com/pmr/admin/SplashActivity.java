@@ -5,14 +5,13 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.WindowManager;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-/* Экран приветствия.
- * Показывается 5 секунд, затем передаёт управление:
- * 1) CheckActivity — если включена проверка системы.
- * 2) PasswordActivity — если пароль требуется.
- * 3) MainActivity — если пароль отключён.
+/* Экран приветствия V2.6.
+ * Экран НЕ ГАСНЕТ во время показа (FLAG_KEEP_SCREEN_ON).
+ * Показывается 5 секунд, затем передаёт управление.
  */
 public class SplashActivity extends AppCompatActivity {
 
@@ -21,6 +20,9 @@ public class SplashActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         setContentView(R.layout.activity_splash);
 
         new Handler(Looper.getMainLooper()).postDelayed(() -> {

@@ -2,9 +2,9 @@ package com.pmr.admin;
 
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -18,12 +18,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-/* Экран логов приложения.
- * Кнопки:
- *  - ОЧИСТИТЬ — очистить лог.
- *  - СОХРАНИТЬ В ФАЙЛ — сохранить в Download.
- *  - ПОДЕЛИТЬСЯ — отправить через любое приложение.
- *  - ОТПРАВИТЬ НА rw6hhl@mail.ru — открыть почтовый клиент.
+/* Экран логов приложения V2.6.
+ * Экран НЕ ГАСНЕТ, пока приложение открыто (FLAG_KEEP_SCREEN_ON).
  */
 public class LogActivity extends AppCompatActivity {
 
@@ -32,6 +28,9 @@ public class LogActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         setContentView(R.layout.activity_log);
 
         logText = findViewById(R.id.logText);
