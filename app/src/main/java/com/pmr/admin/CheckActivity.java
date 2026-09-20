@@ -15,20 +15,16 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-/* Экран проверки системы.
- * Проверяет:
- *  1) Свободен ли порт приёма UDP.
- *  2) Доступен ли сервер PMR (по UDP).
- * Показывает:
- *  - Канал.
- *  - Секрет.
- *  - Пароль (включён/отключён).
- *  - Автозапуск (отключён — по проекту).
+/* Экран проверки системы V2.5.
+ * Проверки выполняются в фоне.
+ * Переход к следующему экрану — ТОЛЬКО по кнопке "ПРОДОЛЖИТЬ".
+ * Автоматического перехода через 3 секунды — НЕТ.
  */
 public class CheckActivity extends AppCompatActivity {
 
     private TextView tvPort, tvServer, tvChannel, tvSecret;
     private TextView tvPassword, tvAutostart;
+    private volatile boolean checksDone = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,42 +43,60 @@ public class CheckActivity extends AppCompatActivity {
             btnContinue.setOnClickListener(v -> goNext());
         }
 
-        /* Проверки выполняем в фоне, UI обновляем через handler */
-        new Thread(this::runChecks).start();
+        /* Мгновенно показываем то, что уже известно */
+        showKnownValues();
 
-        /* Автоматический переход через 3 секунды */
-        new Handler(Looper.getMainLooper()).postDelayed(this::goNext, 3000);
+        /* Проверки выполняем в фоне */
+        new Thread(this::runChecks).start();
+    }
+
+    private void showKnownValues() {
+        SharedPreferences sp = getSharedPreferences(
+                PasswordActivity.PREFS, MODE_PRIVATE);
+
+        int port = sp.getInt(PasswordActivity.KEY_PORT_PRM,
+                PasswordActivity.DEFAULT_PORT_PRM);
+        int myIdx = PmrSocket.MyMailIndex;
+        int myCh = PmrSocket.MyPChannel;
+        int kanal = (myCh == 0) ? 0 : ((myIdx & 0xF) * 8) + myCh;
+        int secret = (myIdx & 0xFFFFFFF0) >> 4;
+
+        boolean requirePass = sp.getBoolean(
+                PasswordActivity.KEY_REQUIRE_PASSWORD, true);
+
+        if (tvPort != null)
+            tvPort.setText(String.valueOf(port) + "  ...");
+        if (tvChannel != null)
+            tvChannel.setText(String.valueOf(kanal));
+        if (tvSecret != null)
+            tvSecret.setText(String.valueOf(secret));
+        if (tvPassword != null)
+            tvPassword.setText(requirePass
+                    ? R.string.check_on : R.string.check_off);
+        if (tvAutostart != null)
+            tvAutostart.setText(R.string.check_off);
     }
 
     private void runChecks() {
         SharedPreferences sp = getSharedPreferences(
                 PasswordActivity.PREFS, MODE_PRIVATE);
 
-        int port = sp.getInt(PasswordActivity.KEY_PORT_PRM, 5323);
+        final int port = sp.getInt(PasswordActivity.KEY_PORT_PRM,
+                PasswordActivity.DEFAULT_PORT_PRM);
 
-        /* Порт */
-        boolean portFree = checkPortFree(port);
+        final boolean portFree = checkPortFree(port);
         final String portText = String.valueOf(port) + "  "
                 + (portFree ? getString(R.string.check_free)
                             : getString(R.string.check_busy));
         final int portColor = portFree ? R.color.c_green : R.color.c_red;
 
-        /* Сервер */
-        boolean serverOk = checkServer();
+        final boolean serverOk = checkServer();
         final String serverText = "185.221.154.39  "
                 + (serverOk ? getString(R.string.check_available)
                             : getString(R.string.check_unavailable));
         final int serverColor = serverOk ? R.color.c_green : R.color.c_red;
 
-        /* Канал, секрет — вычисляем по параметрам из PmrSocket */
-        int myIdx = PmrSocket.MyMailIndex;
-        int myCh = PmrSocket.MyPChannel;
-        int kanal = (myCh == 0) ? 0 : ((myIdx & 0xF) * 8) + myCh;
-        int secret = (myIdx & 0xFFFFFFF0) >> 4;
-
-        /* Пароль */
-        boolean requirePass = sp.getBoolean(
-                PasswordActivity.KEY_REQUIRE_PASSWORD, true);
+        checksDone = true;
 
         Handler h = new Handler(Looper.getMainLooper());
         h.post(() -> {
@@ -95,15 +109,6 @@ public class CheckActivity extends AppCompatActivity {
                 tvServer.setText(serverText);
                 tvServer.setTextColor(ContextCompat.getColor(
                         CheckActivity.this, serverColor));
-            }
-            if (tvChannel != null) tvChannel.setText(String.valueOf(kanal));
-            if (tvSecret != null) tvSecret.setText(String.valueOf(secret));
-            if (tvPassword != null) {
-                tvPassword.setText(requirePass
-                        ? R.string.check_on : R.string.check_off);
-            }
-            if (tvAutostart != null) {
-                tvAutostart.setText(R.string.check_off);
             }
         });
     }

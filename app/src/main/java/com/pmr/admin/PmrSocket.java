@@ -9,7 +9,10 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-/* UDP-логика PMR V2.4 — с логированием всех ключевых действий. */
+/* UDP-логика PMR V2.5.
+ * Все публичные команды (sendBan, send260, sendL, sendRename, sendDelete, sendList)
+ * выполняются в ОТДЕЛЬНОМ ПОТОКЕ — чтобы не было NetworkOnMainThreadException.
+ */
 public class PmrSocket {
 
     public static final String IP_SERVER = "185.221.154.39";
@@ -138,7 +141,6 @@ public class PmrSocket {
                 }
             }
 
-            /* Диагностика раз в 5 секунд */
             diag++;
             if (diag > 50) {
                 AppLog.add("диаг: sock=" + (sock != null)
@@ -177,7 +179,6 @@ public class PmrSocket {
                             if (kanal_Secret != 0) sendCmdHeader(7, 0, kanal_Secret);
                             break;
                         case 7:
-                            AppLog.add("приём: secret-test OK");
                             break;
                         case 'n':
                             if (client != KolInKanal) { KolInKanal = client; sendL(); }
@@ -245,6 +246,7 @@ public class PmrSocket {
         }
     }
 
+    /* Низкоуровневая отправка — вызывается ТОЛЬКО из фоновых потоков */
     private void sendRaw(byte[] buf) {
         DatagramSocket s = sock;
         InetAddress a = serverAddr;
@@ -270,80 +272,93 @@ public class PmrSocket {
         sendRaw(buf);
     }
 
+    /* ============ ПУБЛИЧНЫЕ КОМАНДЫ — В ОТДЕЛЬНОМ ПОТОКЕ ============ */
+
     public void sendL() {
-        AppLog.add("отправка: cmd=234 (list), kanal=13, port=" + (PORT_PRD + kanal_PRD));
-        sendCmdHeader(234, 13, 0);
+        new Thread(() -> {
+            AppLog.add("отправка: cmd=234 (list), kanal=13, port="
+                    + (PORT_PRD + kanal_PRD));
+            sendCmdHeader(234, 13, 0);
+        }).start();
     }
 
-    public void sendBan(int client) {
-        AppLog.add("отправка: cmd=222 (ban), kanal=13, client=" + client
-                + ", port=" + (PORT_PRD + kanal_PRD));
-        sendCmdHeader(222, 13, client);
-        sendCmdHeader(234, 13, 0);
+    public void sendBan(final int client) {
         new Thread(() -> {
+            AppLog.add("отправка: cmd=222 (ban), kanal=13, client=" + client
+                    + ", port=" + (PORT_PRD + kanal_PRD));
+            sendCmdHeader(222, 13, client);
+            sendCmdHeader(234, 13, 0);
             try { Thread.sleep(300); } catch (InterruptedException ignored) {}
             sendCmdHeader(234, 13, 0);
         }).start();
     }
 
-    public void send260(int v) {
-        AppLog.add("отправка: cmd=221 (26x), kanal=13, value=" + v
-                + ", port=" + (PORT_PRD + kanal_PRD));
-        sendCmdHeader(221, 13, v);
+    public void send260(final int v) {
+        new Thread(() -> {
+            AppLog.add("отправка: cmd=221 (26x), kanal=13, value=" + v
+                    + ", port=" + (PORT_PRD + kanal_PRD));
+            sendCmdHeader(221, 13, v);
+        }).start();
     }
 
-    public void sendRename(String text) {
-        if (text == null) text = "";
-        try {
-            byte[] txt = text.getBytes("UTF-8");
-            byte[] buf = new byte[4 + txt.length + 1];
-            buf[0] = (byte)133;
-            buf[1] = 13;
-            buf[2] = 0;
-            buf[3] = 0;
-            System.arraycopy(txt, 0, buf, 4, txt.length);
-            buf[4 + txt.length] = 0;
-            DatagramSocket s = sock;
-            InetAddress a = serverAddr;
-            if (s == null || a == null) {
-                AppLog.add("sendRename: sock или server = null");
-                return;
+    public void sendRename(final String textIn) {
+        new Thread(() -> {
+            String text = (textIn == null) ? "" : textIn;
+            try {
+                byte[] txt = text.getBytes("UTF-8");
+                byte[] buf = new byte[4 + txt.length + 1];
+                buf[0] = (byte)133;
+                buf[1] = 13;
+                buf[2] = 0;
+                buf[3] = 0;
+                System.arraycopy(txt, 0, buf, 4, txt.length);
+                buf[4 + txt.length] = 0;
+                DatagramSocket s = sock;
+                InetAddress a = serverAddr;
+                if (s == null || a == null) {
+                    AppLog.add("sendRename: sock или server = null");
+                    return;
+                }
+                s.send(new DatagramPacket(buf, buf.length, a, 15999));
+                AppLog.add("отправка: cmd=133 (rename), port=15999");
+            } catch (Exception e) {
+                AppLog.add("sendRename FAIL: " + e);
             }
-            s.send(new DatagramPacket(buf, buf.length, a, 15999));
-            AppLog.add("отправка: cmd=133 (rename), port=15999");
-        } catch (Exception e) {
-            AppLog.add("sendRename FAIL: " + e);
-        }
+        }).start();
     }
 
-    public void sendDelete(int id) {
-        try {
-            DatagramSocket s = sock;
-            InetAddress a = serverAddr;
-            if (s == null || a == null) return;
-            byte[] h = new byte[4];
-            h[0] = (byte)143;
-            h[1] = 13;
-            h[2] = (byte)(id & 0xFF);
-            h[3] = (byte)((id >> 8) & 0xFF);
-            s.send(new DatagramPacket(h, 4, a, 15999));
-            AppLog.add("отправка: cmd=143 (delete), port=15999");
-        } catch (Exception ignored) {}
+    public void sendDelete(final int id) {
+        new Thread(() -> {
+            try {
+                DatagramSocket s = sock;
+                InetAddress a = serverAddr;
+                if (s == null || a == null) return;
+                byte[] h = new byte[4];
+                h[0] = (byte)143;
+                h[1] = 13;
+                h[2] = (byte)(id & 0xFF);
+                h[3] = (byte)((id >> 8) & 0xFF);
+                s.send(new DatagramPacket(h, 4, a, 15999));
+                AppLog.add("отправка: cmd=143 (delete), port=15999");
+            } catch (Exception ignored) {}
+        }).start();
     }
 
     public void sendList() {
-        try {
-            DatagramSocket s = sock;
-            InetAddress a = serverAddr;
-            if (s == null || a == null) return;
-            byte[] h = new byte[4];
-            h[0] = (byte)123;
-            h[1] = 13;
-            h[2] = 0;
-            h[3] = 0;
-            s.send(new DatagramPacket(h, 4, a, 15999));
-            AppLog.add("отправка: cmd=123 (list.txt), port=15999");
-        } catch (Exception ignored) {}
+        new Thread(() -> {
+            try {
+                DatagramSocket s = sock;
+                InetAddress a = serverAddr;
+                if (s == null || a == null) return;
+                byte[] h = new byte[4];
+                h[0] = (byte)123;
+                h[1] = 13;
+                h[2] = 0;
+                h[3] = 0;
+                s.send(new DatagramPacket(h, 4, a, 15999));
+                AppLog.add("отправка: cmd=123 (list.txt), port=15999");
+            } catch (Exception ignored) {}
+        }).start();
     }
 
     public void processCommand(String raw) {
