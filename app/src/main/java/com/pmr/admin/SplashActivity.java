@@ -10,8 +10,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 /* Экран приветствия.
  * Показывается 5 секунд, затем передаёт управление:
- * - PasswordActivity, если пароль требуется;
- * - MainActivity, если пароль отключён.
+ * 1) CheckActivity — если включена проверка системы.
+ * 2) PasswordActivity — если пароль требуется.
+ * 3) MainActivity — если пароль отключён.
  */
 public class SplashActivity extends AppCompatActivity {
 
@@ -25,14 +26,21 @@ public class SplashActivity extends AppCompatActivity {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             SharedPreferences sp = getSharedPreferences(
                     PasswordActivity.PREFS, MODE_PRIVATE);
-            boolean requirePass = sp.getBoolean(
-                    PasswordActivity.KEY_REQUIRE_PASSWORD, true);
+
+            boolean checkSystem = sp.getBoolean(
+                    PasswordActivity.KEY_CHECK_SYSTEM, true);
 
             Intent i;
-            if (requirePass) {
-                i = new Intent(SplashActivity.this, PasswordActivity.class);
+            if (checkSystem) {
+                i = new Intent(SplashActivity.this, CheckActivity.class);
             } else {
-                i = new Intent(SplashActivity.this, MainActivity.class);
+                boolean requirePass = sp.getBoolean(
+                        PasswordActivity.KEY_REQUIRE_PASSWORD, true);
+                if (requirePass) {
+                    i = new Intent(SplashActivity.this, PasswordActivity.class);
+                } else {
+                    i = new Intent(SplashActivity.this, MainActivity.class);
+                }
             }
             startActivity(i);
             finish();

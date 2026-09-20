@@ -30,6 +30,11 @@
         </activity>
 
         <activity
+            android:name=".CheckActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
+        <activity
             android:name=".PasswordActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize|keyboardHidden" />

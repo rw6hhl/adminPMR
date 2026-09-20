@@ -1,20 +1,22 @@
 package com.pmr.admin;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-/* UDP-логика PMR V2.2.
+/* UDP-логика PMR V2.3.
+ * Порт приёма читается из SharedPreferences (KEY_PORT_PRM).
  * Команда бана: 222, канал 13, client.
  * Команда 260/261: 221, канал 13, значение (0 или 1).
- * Дополнительная диагностика в isRunning().
  */
 public class PmrSocket {
 
     public static final String IP_SERVER = "185.221.154.39";
-    public static final int PORT_PRM = 5322;
     public static final int PORT_PRD = 16000;
 
     public static int MyMailIndex = 51953;
@@ -27,9 +29,11 @@ public class PmrSocket {
     private final WebLog webLog;
     private final CmdQueue cmdQueue;
     private final File filesDir;
+    private final Context appCtx;
 
     private volatile DatagramSocket sock;
     private volatile InetAddress serverAddr;
+    private int port_prm = 5323;
     private int kanal_PRD = 0;
     private int kanal_Secret = 0;
 
@@ -42,8 +46,10 @@ public class PmrSocket {
     private Thread threadUdp;
     private Thread threadTimer;
 
-    public PmrSocket(ListFile lf, ChanList cl, ActiveLog al, WebLog wl,
+    public PmrSocket(Context ctx,
+                     ListFile lf, ChanList cl, ActiveLog al, WebLog wl,
                      CmdQueue cq, File filesDir) {
+        this.appCtx = ctx;
         this.listFile = lf;
         this.chanList = cl;
         this.activeLog = al;
@@ -54,15 +60,25 @@ public class PmrSocket {
 
     public int getActiveClient() { return active_client_num; }
 
-    /* Проверка: работает ли сокет и установлен ли канал */
     public boolean isRunning() {
         return running && sock != null && serverAddr != null;
     }
 
+    public int getPortPrm() { return port_prm; }
+    public int getKanalPRD() { return kanal_PRD; }
+    public int getKanalSecret() { return kanal_Secret; }
+
     public void start() {
         if (running) return;
+
+        /* Читаем порт из настроек */
+        SharedPreferences sp = appCtx.getSharedPreferences(
+                PasswordActivity.PREFS, Context.MODE_PRIVATE);
+        port_prm = sp.getInt(PasswordActivity.KEY_PORT_PRM,
+                PasswordActivity.DEFAULT_PORT_PRM);
+
         try {
-            sock = new DatagramSocket(PORT_PRM);
+            sock = new DatagramSocket(port_prm);
             sock.setSoTimeout(100);
             serverAddr = InetAddress.getByName(IP_SERVER);
         } catch (Exception e) {
@@ -227,8 +243,6 @@ public class PmrSocket {
         sendCmdHeader(234, 13, 0);
     }
 
-    /* Бан: 222, канал 13, client. Затем 234.
-     * Через 300 мс — ещё раз 234. */
     public void sendBan(int client) {
         sendCmdHeader(222, 13, client);
         sendCmdHeader(234, 13, 0);
@@ -238,7 +252,6 @@ public class PmrSocket {
         }).start();
     }
 
-    /* 260/261: 221, канал 13, value. */
     public void send260(int v) {
         sendCmdHeader(221, 13, v);
     }

@@ -10,10 +10,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 /* Экран ввода пароля.
- * Пароль хранится в SharedPreferences.
- * По умолчанию: Rostov2026.
- * Если пароль отключён в настройках — этот экран не показывается
- * (см. SplashActivity).
+ * Все ключи SharedPreferences собраны здесь.
  */
 public class PasswordActivity extends AppCompatActivity {
 
@@ -21,8 +18,13 @@ public class PasswordActivity extends AppCompatActivity {
     public static final String KEY_PASSWORD = "password";
     public static final String KEY_REFRESH = "refresh_sec";
     public static final String KEY_REQUIRE_PASSWORD = "require_password";
+    public static final String KEY_PORT_PRM = "port_prm";
+    public static final String KEY_CHECK_SYSTEM = "check_system";
+    public static final String KEY_26_STATE = "state_26";
+
     public static final String DEFAULT_PASSWORD = "Rostov2026";
     public static final int    DEFAULT_REFRESH = 2;
+    public static final int    DEFAULT_PORT_PRM = 5323;
 
     private EditText passInput;
 
