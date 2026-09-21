@@ -21,12 +21,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/* Адаптер списка абонентов V3.0.
- * Добавлено:
- *   - сортировка: админы (11777) — вниз;
- *   - скрытие кнопки БАН для 11777 (кнопка неактивна, серый цвет, "—");
- *   - локальный кэш банов (SharedPreferences, ключ bans_local);
- *   - наложение локального кэша на серверные данные.
+/* Адаптер списка абонентов V3.1.
+ * Исправлено: текст кнопки БАН сбрасывается в "БАН" для не-админов.
+ * Причина бага V3.0: RecyclerView переиспользует View — текст "—"
+ * оставался после админа (Id=11777).
  */
 public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
 
@@ -43,7 +41,6 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
     }
 
     public void setData(List<ChanList.Item> items, int activeClient, ListFile lf) {
-        /* 1. Наложение локального кэша банов */
         SharedPreferences sp = ctx.getSharedPreferences(
                 PasswordActivity.PREFS, Context.MODE_PRIVATE);
         Set<String> bansLocal = sp.getStringSet(KEY_BANS_LOCAL,
@@ -53,13 +50,11 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
         ChanList.Item active = null;
 
         for (ChanList.Item it : items) {
-            /* Локальный кэш: если Id в наборе — banLocal = 1 */
             if (bansLocal.contains(String.valueOf(it.Id))) {
                 it.banLocal = 1;
             } else {
                 it.banLocal = 0;
             }
-
             if (it.i == activeClient) {
                 active = it;
             } else {
@@ -67,7 +62,6 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
             }
         }
 
-        /* 2. Сортировка: админы — в конец, остальные — по Id */
         Collections.sort(sorted, new Comparator<ChanList.Item>() {
             @Override
             public int compare(ChanList.Item a, ChanList.Item b) {
@@ -79,7 +73,6 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
             }
         });
 
-        /* 3. Активный — в начало */
         if (active != null) sorted.add(0, active);
 
         this.items = sorted;
@@ -115,10 +108,8 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
             h.text.setTypeface(null, Typeface.NORMAL);
         }
 
-        /* Локальный кэш + серверный ban: показываем, если хоть один = 1 */
         boolean banned = (it.ban == 1) || (it.banLocal == 1);
 
-        /* Кнопка БАН: для админа — неактивна, серая, "—" */
         if (it.Id == ADMIN_ID) {
             h.btnBan.setText("—");
             h.btnBan.setEnabled(false);
@@ -126,6 +117,7 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
                     ContextCompat.getColorStateList(ctx, R.color.c_gray));
             h.btnBan.setOnClickListener(null);
         } else {
+            h.btnBan.setText("БАН");            // ← ИСПРАВЛЕНИЕ
             h.btnBan.setEnabled(true);
             if (banned) {
                 h.btnBan.setBackgroundTintList(
@@ -151,7 +143,6 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
                 }
                 PmrService.pmrSocket.sendBan(cli);
 
-                /* Обновляем локальный кэш */
                 SharedPreferences sp2 = ctx.getSharedPreferences(
                         PasswordActivity.PREFS, Context.MODE_PRIVATE);
                 Set<String> set = sp2.getStringSet(KEY_BANS_LOCAL,
