@@ -3,6 +3,11 @@ package com.pmr.admin;
 import java.util.ArrayList;
 import java.util.List;
 
+/* Список абонентов в канале V3.0.
+ * Добавлено поле banLocal — локальный кэш бана (SharedPreferences).
+ * ban — серверное значение (может быть всегда 0).
+ * banLocal — локальное значение (виден бан на этом устройстве).
+ */
 public class ChanList {
 
     public static class Item {
@@ -12,6 +17,7 @@ public class ChanList {
         public int port;
         public int ip;
         public int ban;
+        public int banLocal;
     }
 
     private final List<Item> items = new ArrayList<>();

@@ -1,6 +1,7 @@
 package com.pmr.admin;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,12 +15,23 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-/* Адаптер списка абонентов V2.2.
- * С диагностическими Toast при нажатии кнопки БАН.
+/* Адаптер списка абонентов V3.0.
+ * Добавлено:
+ *   - сортировка: админы (11777) — вниз;
+ *   - скрытие кнопки БАН для 11777 (кнопка неактивна, серый цвет, "—");
+ *   - локальный кэш банов (SharedPreferences, ключ bans_local);
+ *   - наложение локального кэша на серверные данные.
  */
 public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
+
+    public static final String KEY_BANS_LOCAL = "bans_local";
+    public static final int ADMIN_ID = 11777;
 
     private final Context ctx;
     private List<ChanList.Item> items = new ArrayList<>();
@@ -31,16 +43,45 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
     }
 
     public void setData(List<ChanList.Item> items, int activeClient, ListFile lf) {
+        /* 1. Наложение локального кэша банов */
+        SharedPreferences sp = ctx.getSharedPreferences(
+                PasswordActivity.PREFS, Context.MODE_PRIVATE);
+        Set<String> bansLocal = sp.getStringSet(KEY_BANS_LOCAL,
+                new HashSet<String>());
+
         List<ChanList.Item> sorted = new ArrayList<>();
         ChanList.Item active = null;
+
         for (ChanList.Item it : items) {
+            /* Локальный кэш: если Id в наборе — banLocal = 1 */
+            if (bansLocal.contains(String.valueOf(it.Id))) {
+                it.banLocal = 1;
+            } else {
+                it.banLocal = 0;
+            }
+
             if (it.i == activeClient) {
                 active = it;
             } else {
                 sorted.add(it);
             }
         }
+
+        /* 2. Сортировка: админы — в конец, остальные — по Id */
+        Collections.sort(sorted, new Comparator<ChanList.Item>() {
+            @Override
+            public int compare(ChanList.Item a, ChanList.Item b) {
+                boolean aAdmin = (a.Id == ADMIN_ID);
+                boolean bAdmin = (b.Id == ADMIN_ID);
+                if (aAdmin && !bAdmin) return 1;
+                if (!aAdmin && bAdmin) return -1;
+                return Integer.compare(a.Id, b.Id);
+            }
+        });
+
+        /* 3. Активный — в начало */
         if (active != null) sorted.add(0, active);
+
         this.items = sorted;
         this.activeClient = activeClient;
         this.listFile = lf;
@@ -74,33 +115,60 @@ public class ChanAdapter extends RecyclerView.Adapter<ChanAdapter.VH> {
             h.text.setTypeface(null, Typeface.NORMAL);
         }
 
-        if (it.ban == 1) {
-            h.btnBan.setBackgroundTintList(
-                    ContextCompat.getColorStateList(ctx, R.color.c_red));
-        } else {
-            h.btnBan.setBackgroundTintList(
-                    ContextCompat.getColorStateList(ctx, R.color.c_green));
-        }
+        /* Локальный кэш + серверный ban: показываем, если хоть один = 1 */
+        boolean banned = (it.ban == 1) || (it.banLocal == 1);
 
-        final int cli = it.i;
-        final int banState = it.ban;
-        h.btnBan.setOnClickListener(v -> {
-            /* Диагностика */
-            if (PmrService.pmrSocket == null) {
-                Toast.makeText(ctx, R.string.toast_ban_null,
-                        Toast.LENGTH_SHORT).show();
-                return;
+        /* Кнопка БАН: для админа — неактивна, серая, "—" */
+        if (it.Id == ADMIN_ID) {
+            h.btnBan.setText("—");
+            h.btnBan.setEnabled(false);
+            h.btnBan.setBackgroundTintList(
+                    ContextCompat.getColorStateList(ctx, R.color.c_gray));
+            h.btnBan.setOnClickListener(null);
+        } else {
+            h.btnBan.setEnabled(true);
+            if (banned) {
+                h.btnBan.setBackgroundTintList(
+                        ContextCompat.getColorStateList(ctx, R.color.c_red));
+            } else {
+                h.btnBan.setBackgroundTintList(
+                        ContextCompat.getColorStateList(ctx, R.color.c_green));
             }
-            if (!PmrService.pmrSocket.isRunning()) {
-                Toast.makeText(ctx, R.string.toast_ban_not_running,
-                        Toast.LENGTH_SHORT).show();
-                return;
-            }
-            PmrService.pmrSocket.sendBan(cli);
-            String msg = ctx.getString(R.string.toast_ban_sent, cli)
-                    + (banState == 1 ? " (разбан)" : " (бан)");
-            Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show();
-        });
+
+            final int cli = it.i;
+            final int itId = it.Id;
+            final boolean curBanned = banned;
+            h.btnBan.setOnClickListener(v -> {
+                if (PmrService.pmrSocket == null) {
+                    Toast.makeText(ctx, R.string.toast_ban_null,
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (!PmrService.pmrSocket.isRunning()) {
+                    Toast.makeText(ctx, R.string.toast_ban_not_running,
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                PmrService.pmrSocket.sendBan(cli);
+
+                /* Обновляем локальный кэш */
+                SharedPreferences sp2 = ctx.getSharedPreferences(
+                        PasswordActivity.PREFS, Context.MODE_PRIVATE);
+                Set<String> set = sp2.getStringSet(KEY_BANS_LOCAL,
+                        new HashSet<String>());
+                Set<String> newSet = new HashSet<>(set);
+                if (curBanned) {
+                    newSet.remove(String.valueOf(itId));
+                } else {
+                    newSet.add(String.valueOf(itId));
+                }
+                sp2.edit().putStringSet(KEY_BANS_LOCAL, newSet).apply();
+
+                String msg = ctx.getString(R.string.toast_ban_sent, cli)
+                        + (curBanned ? " (разбан)" : " (бан)");
+                Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show();
+            });
+        }
     }
 
     @Override

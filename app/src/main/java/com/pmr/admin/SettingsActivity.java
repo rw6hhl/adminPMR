@@ -11,8 +11,9 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-/* Экран настроек V2.6.
+/* Экран настроек V3.0.
  * Экран НЕ ГАСНЕТ, пока приложение открыто (FLAG_KEEP_SCREEN_ON).
+ * Добавлен раздел "Регистрационные данные".
  */
 public class SettingsActivity extends AppCompatActivity {
 
@@ -25,6 +26,14 @@ public class SettingsActivity extends AppCompatActivity {
     private CheckBox checkSystemBox;
     private Button btn26;
     private Button btnOpenLog;
+
+    /* Регистрационные данные V3.0. */
+    private EditText regMailIndex;
+    private EditText regPChannel;
+    private EditText regPriznak;
+    private EditText regIpServer;
+    private EditText regCallsign;
+    private EditText regCity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +52,13 @@ public class SettingsActivity extends AppCompatActivity {
         checkSystemBox = findViewById(R.id.checkSystemBox);
         btn26 = findViewById(R.id.btn26);
         btnOpenLog = findViewById(R.id.btnOpenLog);
+
+        regMailIndex = findViewById(R.id.regMailIndex);
+        regPChannel  = findViewById(R.id.regPChannel);
+        regPriznak   = findViewById(R.id.regPriznak);
+        regIpServer  = findViewById(R.id.regIpServer);
+        regCallsign  = findViewById(R.id.regCallsign);
+        regCity      = findViewById(R.id.regCity);
 
         Button saveBtn = findViewById(R.id.btnSaveSettings);
         if (saveBtn != null) saveBtn.setOnClickListener(v -> saveSettings());
@@ -79,6 +95,32 @@ public class SettingsActivity extends AppCompatActivity {
 
         boolean on26 = sp.getBoolean(PasswordActivity.KEY_26_STATE, false);
         updateBtn26(on26);
+
+        /* Регистрационные данные. */
+        if (regMailIndex != null)
+            regMailIndex.setText(sp.getString(
+                    PasswordActivity.KEY_MY_MAIL_INDEX,
+                    PasswordActivity.DEFAULT_MY_MAIL_INDEX));
+        if (regPChannel != null)
+            regPChannel.setText(sp.getString(
+                    PasswordActivity.KEY_MY_PCHANNEL,
+                    PasswordActivity.DEFAULT_MY_PCHANNEL));
+        if (regPriznak != null)
+            regPriznak.setText(sp.getString(
+                    PasswordActivity.KEY_PRIZNAK_PMR,
+                    PasswordActivity.DEFAULT_PRIZNAK_PMR));
+        if (regIpServer != null)
+            regIpServer.setText(sp.getString(
+                    PasswordActivity.KEY_IP_SERVER,
+                    PasswordActivity.DEFAULT_IP_SERVER));
+        if (regCallsign != null)
+            regCallsign.setText(sp.getString(
+                    PasswordActivity.KEY_CALLSIGN,
+                    PasswordActivity.DEFAULT_CALLSIGN));
+        if (regCity != null)
+            regCity.setText(sp.getString(
+                    PasswordActivity.KEY_CITY,
+                    PasswordActivity.DEFAULT_CITY));
     }
 
     private void toggle26() {
@@ -188,6 +230,42 @@ public class SettingsActivity extends AppCompatActivity {
         boolean checkSystem = checkSystemBox != null && checkSystemBox.isChecked();
         sp.edit().putBoolean(PasswordActivity.KEY_CHECK_SYSTEM,
                 checkSystem).apply();
+
+        /* Регистрационные данные. */
+        String myMailIndex = (regMailIndex != null)
+                ? regMailIndex.getText().toString().trim() : "";
+        String myPChannel = (regPChannel != null)
+                ? regPChannel.getText().toString().trim() : "";
+        String priznak = (regPriznak != null)
+                ? regPriznak.getText().toString().trim() : "";
+        String ipServer = (regIpServer != null)
+                ? regIpServer.getText().toString().trim() : "";
+        String callsign = (regCallsign != null)
+                ? regCallsign.getText().toString().trim() : "";
+        String city = (regCity != null)
+                ? regCity.getText().toString().trim() : "";
+
+        if (!myMailIndex.isEmpty()) sp.edit().putString(
+                PasswordActivity.KEY_MY_MAIL_INDEX, myMailIndex).apply();
+        if (!myPChannel.isEmpty()) sp.edit().putString(
+                PasswordActivity.KEY_MY_PCHANNEL, myPChannel).apply();
+        if (!priznak.isEmpty()) sp.edit().putString(
+                PasswordActivity.KEY_PRIZNAK_PMR, priznak).apply();
+        if (!ipServer.isEmpty()) sp.edit().putString(
+                PasswordActivity.KEY_IP_SERVER, ipServer).apply();
+        if (!callsign.isEmpty()) sp.edit().putString(
+                PasswordActivity.KEY_CALLSIGN, callsign).apply();
+        if (!city.isEmpty()) sp.edit().putString(
+                PasswordActivity.KEY_CITY, city).apply();
+
+        /* Отправка rename на сервер, если позывной и город не пусты. */
+        if (PmrService.pmrSocket != null
+                && !priznak.isEmpty()
+                && !callsign.isEmpty()
+                && !city.isEmpty()) {
+            String cmd = priznak + " " + callsign + " " + city;
+            PmrService.pmrSocket.sendRename(cmd);
+        }
 
         Toast.makeText(this, R.string.settings_saved,
                 Toast.LENGTH_SHORT).show();

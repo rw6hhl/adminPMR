@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Admin PMR</string>
-    <string name="app_version">V2.6</string>
+    <string name="app_version">V3.0</string>
 
     <string name="password_hint">Пароль</string>
     <string name="password_btn">ВОЙТИ</string>
@@ -10,6 +10,8 @@
     <string name="btn_settings">НАСТРОЙКИ</string>
 
     <string name="list_title">СПИСОК АБОНЕНТОВ</string>
+    <string name="list_refresh">ОБНОВИТЬ СПИСОК</string>
+    <string name="list_refreshing">Обновление…</string>
 
     <string name="ban_on">БАН</string>
     <string name="ban_off">БАН</string>
@@ -50,6 +52,9 @@
     <string name="log_saved">Лог сохранён</string>
     <string name="log_save_error">Ошибка сохранения</string>
     <string name="log_empty">Лог пуст</string>
+    <string name="log_active_prefix">Активен</string>
+    <string name="log_cmd_out">→</string>
+    <string name="log_cmd_in">←</string>
 
     <string name="notif_channel">PMR Admin</string>
     <string name="notif_title">PMR Admin работает</string>
@@ -63,15 +68,9 @@
     <string name="toast_26_null">Служба не готова</string>
 
     <string name="check_title">ПРОВЕРКА СИСТЕМЫ</string>
-    <string name="check_port">Порт приёма</string>
     <string name="check_server">Сервер PMR</string>
-    <string name="check_channel">Канал</string>
-    <string name="check_secret">Секрет</string>
     <string name="check_password">Пароль</string>
-    <string name="check_autostart">Автозапуск</string>
     <string name="check_continue">ПРОДОЛЖИТЬ</string>
-    <string name="check_free">СВОБОДЕН</string>
-    <string name="check_busy">ЗАНЯТ</string>
     <string name="check_available">ДОСТУПЕН</string>
     <string name="check_unavailable">НЕДОСТУПЕН</string>
     <string name="check_on">ВКЛЮЧЁН</string>

@@ -16,15 +16,17 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-/* Экран проверки системы V2.6.
+/* Экран проверки системы V3.0.
+ * Оставлены только две проверки:
+ *   - Сервер PMR (доступность UDP-порта 16013 на IP сервера);
+ *   - Пароль: состояние (включён/отключён в настройках).
  * Экран НЕ ГАСНЕТ, пока приложение открыто (FLAG_KEEP_SCREEN_ON).
  * Переход — только по кнопке "ПРОДОЛЖИТЬ".
  */
 public class CheckActivity extends AppCompatActivity {
 
-    private TextView tvPort, tvServer, tvChannel, tvSecret;
-    private TextView tvPassword, tvAutostart;
-    private volatile boolean checksDone = false;
+    private TextView tvServer;
+    private TextView tvPassword;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,12 +36,8 @@ public class CheckActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_check);
 
-        tvPort = findViewById(R.id.checkPortVal);
         tvServer = findViewById(R.id.checkServerVal);
-        tvChannel = findViewById(R.id.checkChannelVal);
-        tvSecret = findViewById(R.id.checkSecretVal);
         tvPassword = findViewById(R.id.checkPasswordVal);
-        tvAutostart = findViewById(R.id.checkAutostartVal);
 
         Button btnContinue = findViewById(R.id.btnContinue);
         if (btnContinue != null) {
@@ -54,76 +52,29 @@ public class CheckActivity extends AppCompatActivity {
         SharedPreferences sp = getSharedPreferences(
                 PasswordActivity.PREFS, MODE_PRIVATE);
 
-        int port = sp.getInt(PasswordActivity.KEY_PORT_PRM,
-                PasswordActivity.DEFAULT_PORT_PRM);
-        int myIdx = PmrSocket.MyMailIndex;
-        int myCh = PmrSocket.MyPChannel;
-        int kanal = (myCh == 0) ? 0 : ((myIdx & 0xF) * 8) + myCh;
-        int secret = (myIdx & 0xFFFFFFF0) >> 4;
-
         boolean requirePass = sp.getBoolean(
                 PasswordActivity.KEY_REQUIRE_PASSWORD, true);
 
-        if (tvPort != null)
-            tvPort.setText(String.valueOf(port) + "  ...");
-        if (tvChannel != null)
-            tvChannel.setText(String.valueOf(kanal));
-        if (tvSecret != null)
-            tvSecret.setText(String.valueOf(secret));
         if (tvPassword != null)
             tvPassword.setText(requirePass
                     ? R.string.check_on : R.string.check_off);
-        if (tvAutostart != null)
-            tvAutostart.setText(R.string.check_off);
     }
 
     private void runChecks() {
-        SharedPreferences sp = getSharedPreferences(
-                PasswordActivity.PREFS, MODE_PRIVATE);
-
-        final int port = sp.getInt(PasswordActivity.KEY_PORT_PRM,
-                PasswordActivity.DEFAULT_PORT_PRM);
-
-        final boolean portFree = checkPortFree(port);
-        final String portText = String.valueOf(port) + "  "
-                + (portFree ? getString(R.string.check_free)
-                            : getString(R.string.check_busy));
-        final int portColor = portFree ? R.color.c_green : R.color.c_red;
-
         final boolean serverOk = checkServer();
-        final String serverText = "185.221.154.39  "
+        final String serverText = PmrSocket.IP_SERVER + "  "
                 + (serverOk ? getString(R.string.check_available)
                             : getString(R.string.check_unavailable));
         final int serverColor = serverOk ? R.color.c_green : R.color.c_red;
 
-        checksDone = true;
-
         Handler h = new Handler(Looper.getMainLooper());
         h.post(() -> {
-            if (tvPort != null) {
-                tvPort.setText(portText);
-                tvPort.setTextColor(ContextCompat.getColor(
-                        CheckActivity.this, portColor));
-            }
             if (tvServer != null) {
                 tvServer.setText(serverText);
                 tvServer.setTextColor(ContextCompat.getColor(
                         CheckActivity.this, serverColor));
             }
         });
-    }
-
-    private boolean checkPortFree(int port) {
-        DatagramSocket s = null;
-        try {
-            s = new DatagramSocket(port);
-            s.setSoTimeout(100);
-            return true;
-        } catch (Exception e) {
-            return false;
-        } finally {
-            if (s != null) s.close();
-        }
     }
 
     private boolean checkServer() {

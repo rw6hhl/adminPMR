@@ -105,6 +105,70 @@
             android:textSize="16sp"
             android:checked="true" />
 
+        <!-- Регистрационные данные V3.0 -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Регистрационные данные"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/regMailIndex"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="MyMailIndex"
+            android:inputType="number"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/regPChannel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="MyPChannel"
+            android:inputType="number"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/regPriznak"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Priznak_pmr"
+            android:inputType="number"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/regIpServer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="IP сервера"
+            android:inputType="text"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/regCallsign"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Позывной"
+            android:inputType="text"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/regCity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Город"
+            android:inputType="text"
+            android:textSize="18sp" />
+
         <Button
             android:id="@+id/btnSaveSettings"
             android:layout_width="match_parent"

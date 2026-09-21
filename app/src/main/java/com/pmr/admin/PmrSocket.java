@@ -8,10 +8,18 @@ import java.io.FileOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.HashSet;
+import java.util.Set;
 
-/* UDP-логика PMR V2.5.
+/* UDP-логика PMR V3.0.
  * Все публичные команды (sendBan, send260, sendL, sendRename, sendDelete, sendList)
  * выполняются в ОТДЕЛЬНОМ ПОТОКЕ — чтобы не было NetworkOnMainThreadException.
+ *
+ * Изменения V3.0:
+ *   - логирование команд через AppLog.addCmd (→ / ←);
+ *   - защита от бана администратора (Priznak_pmr);
+ *   - вывод активного абонента раз в секунду в лог;
+ *   - чтение локального кэша банов (bans_local) при chanList.
  */
 public class PmrSocket {
 
@@ -44,6 +52,9 @@ public class PmrSocket {
     private volatile boolean running = false;
     private Thread threadUdp;
     private Thread threadTimer;
+
+    /* Тик для вывода активного абонента в лог (раз в секунду). */
+    private int activeLogTick = 0;
 
     public PmrSocket(Context ctx,
                      ListFile lf, ChanList cl, ActiveLog al, WebLog wl,
@@ -124,6 +135,15 @@ public class PmrSocket {
                 if (active_tic > 15) { active_client_num = -1; active_tic = 0; }
             }
 
+            /* Вывод активного абонента в лог раз в секунду. */
+            activeLogTick++;
+            if (activeLogTick >= 10) {
+                if (active_client_num >= 0) {
+                    AppLog.addCmd("←", "active: client=" + active_client_num);
+                }
+                activeLogTick = 0;
+            }
+
             cikl_PRD++;
             if (cikl_PRD > 9) {
                 if (kanal_Secret != 0) sendCmdHeader(7, 0, kanal_Secret);
@@ -176,28 +196,31 @@ public class PmrSocket {
                 if (n == 4) {
                     switch (command) {
                         case 0:
+                            AppLog.addCmd("←", "cmd=0 kanal=" + kanal);
                             if (kanal_Secret != 0) sendCmdHeader(7, 0, kanal_Secret);
                             break;
                         case 7:
+                            AppLog.addCmd("←", "cmd=7 kanal=" + kanal);
                             break;
                         case 'n':
+                            AppLog.addCmd("←", "cmd=n client=" + client);
                             if (client != KolInKanal) { KolInKanal = client; sendL(); }
                             break;
                     }
                 } else {
                     switch (command) {
-                        case 19: if (n == 324) onWave(client); break;
-                        case 21: if (n == 644) onWave(client); break;
-                        case 22: if (n == 324) onWave(client); break;
-                        case 25: if (n == 324) onWave(client); break;
-                        case 26: if (n == 164) onWave(client); break;
+                        case 19: if (n == 324) { AppLog.addCmd("←", "cmd=19 wave client=" + client); onWave(client); } break;
+                        case 21: if (n == 644) { AppLog.addCmd("←", "cmd=21 wave client=" + client); onWave(client); } break;
+                        case 22: if (n == 324) { AppLog.addCmd("←", "cmd=22 wave client=" + client); onWave(client); } break;
+                        case 25: if (n == 324) { AppLog.addCmd("←", "cmd=25 wave client=" + client); onWave(client); } break;
+                        case 26: if (n == 164) { AppLog.addCmd("←", "cmd=26 wave client=" + client); onWave(client); } break;
                         case 234:
-                            AppLog.add("приём: chanList n=" + n
-                                    + ", cnt=" + ((n - 4) / 13));
+                            AppLog.addCmd("←", "cmd=234 chanList cnt="
+                                    + ((n - 4) / 13) + " size=" + n);
                             handleChanList(buf, n);
                             break;
                         case 123:
-                            AppLog.add("приём: list.txt n=" + n);
+                            AppLog.addCmd("←", "cmd=123 list.txt size=" + n);
                             handleListFile(buf, n, client);
                             break;
                     }
@@ -215,6 +238,13 @@ public class PmrSocket {
 
     private void handleChanList(byte[] buf, int n) {
         chanList.clear();
+
+        /* Читаем локальный кэш банов. */
+        SharedPreferences sp = appCtx.getSharedPreferences(
+                PasswordActivity.PREFS, Context.MODE_PRIVATE);
+        Set<String> bansLocal = sp.getStringSet(
+                ChanAdapter.KEY_BANS_LOCAL, new HashSet<String>());
+
         int cnt = (n - 4) / 13;
         if (cnt > 102) cnt = 102;
         for (int k = 0; k < cnt; k++) {
@@ -229,6 +259,7 @@ public class PmrSocket {
                     | ((buf[off + 9] & 0xFF) << 8)
                     | (buf[off + 8] & 0xFF);
             it.ban  = buf[off + 12] & 0xFF;
+            it.banLocal = bansLocal.contains(String.valueOf(it.Id)) ? 1 : 0;
             chanList.add(it);
         }
     }
@@ -276,7 +307,7 @@ public class PmrSocket {
 
     public void sendL() {
         new Thread(() -> {
-            AppLog.add("отправка: cmd=234 (list), kanal=13, port="
+            AppLog.addCmd("→", "cmd=234 list kanal=13 port="
                     + (PORT_PRD + kanal_PRD));
             sendCmdHeader(234, 13, 0);
         }).start();
@@ -284,8 +315,13 @@ public class PmrSocket {
 
     public void sendBan(final int client) {
         new Thread(() -> {
-            AppLog.add("отправка: cmd=222 (ban), kanal=13, client=" + client
-                    + ", port=" + (PORT_PRD + kanal_PRD));
+            /* Защита от бана администратора. */
+            if (client == Priznak_pmr) {
+                AppLog.add("бан админа запрещён (client=" + client + ")");
+                return;
+            }
+            AppLog.addCmd("→", "cmd=222 ban kanal=13 client=" + client
+                    + " port=" + (PORT_PRD + kanal_PRD));
             sendCmdHeader(222, 13, client);
             sendCmdHeader(234, 13, 0);
             try { Thread.sleep(300); } catch (InterruptedException ignored) {}
@@ -295,8 +331,8 @@ public class PmrSocket {
 
     public void send260(final int v) {
         new Thread(() -> {
-            AppLog.add("отправка: cmd=221 (26x), kanal=13, value=" + v
-                    + ", port=" + (PORT_PRD + kanal_PRD));
+            AppLog.addCmd("→", "cmd=221 26x kanal=13 value=" + v
+                    + " port=" + (PORT_PRD + kanal_PRD));
             sendCmdHeader(221, 13, v);
         }).start();
     }
@@ -320,7 +356,7 @@ public class PmrSocket {
                     return;
                 }
                 s.send(new DatagramPacket(buf, buf.length, a, 15999));
-                AppLog.add("отправка: cmd=133 (rename), port=15999");
+                AppLog.addCmd("→", "cmd=133 rename port=15999");
             } catch (Exception e) {
                 AppLog.add("sendRename FAIL: " + e);
             }
@@ -339,7 +375,7 @@ public class PmrSocket {
                 h[2] = (byte)(id & 0xFF);
                 h[3] = (byte)((id >> 8) & 0xFF);
                 s.send(new DatagramPacket(h, 4, a, 15999));
-                AppLog.add("отправка: cmd=143 (delete), port=15999");
+                AppLog.addCmd("→", "cmd=143 delete port=15999");
             } catch (Exception ignored) {}
         }).start();
     }
@@ -356,7 +392,7 @@ public class PmrSocket {
                 h[2] = 0;
                 h[3] = 0;
                 s.send(new DatagramPacket(h, 4, a, 15999));
-                AppLog.add("отправка: cmd=123 (list.txt), port=15999");
+                AppLog.addCmd("→", "cmd=123 list.txt port=15999");
             } catch (Exception ignored) {}
         }).start();
     }
